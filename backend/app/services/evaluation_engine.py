@@ -1,15 +1,21 @@
 from typing import Dict, List, Any
 from sqlalchemy.orm import Session
+import json
 import re
-from difflib import SequenceMatcher
+from openai import OpenAI
 
 from app.models.interview import Interview
 from app.models.question import Question
 from app.services.role_company_engine import get_company_config, calculate_level_thresholds
+from app.core.config import settings
+
+# Initialize OpenAI client
+client = None
+if settings.OPENAI_API_KEY:
+    client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
 
 async def evaluate_interview(interview: Interview, db: Session) -> Dict[str, Any]:
-    questions_data = interview.questions_asked or []
     responses_data = interview.responses or []
 
     question_scores = []
@@ -23,7 +29,12 @@ async def evaluate_interview(interview: Interview, db: Session) -> Dict[str, Any
         if not question:
             continue
 
-        score_result = evaluate_single_answer(answer, question)
+        # Use LLM evaluation if available, otherwise fallback to keyword-based
+        if client:
+            score_result = await evaluate_with_llm(answer, question)
+        else:
+            score_result = evaluate_with_keywords(answer, question)
+
         question_scores.append(score_result)
         detailed_feedback.append({
             "question_id": question_id,
@@ -31,8 +42,8 @@ async def evaluate_interview(interview: Interview, db: Session) -> Dict[str, Any
             "answer": answer,
             "score": score_result["score"],
             "feedback": score_result["feedback"],
-            "key_points_covered": score_result["key_points_covered"],
-            "missed_points": score_result["missed_points"]
+            "key_points_covered": score_result.get("key_points_covered", []),
+            "missed_points": score_result.get("missed_points", [])
         })
 
     if question_scores:
@@ -46,8 +57,16 @@ async def evaluate_interview(interview: Interview, db: Session) -> Dict[str, Any
     behavioral_weight = company_config.get("behavioral_weight", 0.3)
     overall_score = (technical_score * (1 - behavioral_weight)) + (communication_score * behavioral_weight)
 
-    strengths, weaknesses = analyze_performance(question_scores, detailed_feedback)
-    suggestions = generate_suggestions(weaknesses, interview.role)
+    # Use LLM for overall analysis if available
+    if client and question_scores:
+        analysis = await analyze_with_llm(interview, detailed_feedback, overall_score)
+        strengths = analysis.get("strengths", [])
+        weaknesses = analysis.get("weaknesses", [])
+        suggestions = analysis.get("suggestions", [])
+    else:
+        strengths, weaknesses = analyze_performance(question_scores, detailed_feedback)
+        suggestions = generate_suggestions(weaknesses, interview.role)
+
     level_prediction = predict_level(overall_score, interview.company)
 
     return {
@@ -65,7 +84,132 @@ async def evaluate_interview(interview: Interview, db: Session) -> Dict[str, Any
     }
 
 
-def evaluate_single_answer(answer: str, question: Question) -> Dict[str, Any]:
+async def evaluate_with_llm(answer: str, question: Question) -> Dict[str, Any]:
+    """Use OpenAI GPT to evaluate the answer with semantic understanding."""
+
+    if not answer or len(answer.strip()) < 10:
+        return {
+            "score": 0,
+            "technical": 0,
+            "communication": 0,
+            "feedback": "No substantial answer provided.",
+            "key_points_covered": [],
+            "missed_points": question.key_points.split(",") if question.key_points else []
+        }
+
+    prompt = f"""You are an expert technical interviewer evaluating a candidate's answer.
+
+QUESTION: {question.question_text}
+
+EXPECTED ANSWER/KEY CONCEPTS: {question.expected_answer or 'Not provided'}
+
+KEY POINTS TO COVER: {question.key_points or 'Not specified'}
+
+CANDIDATE'S ANSWER: {answer}
+
+Evaluate the answer and respond with a JSON object containing:
+{{
+    "technical_score": <0-100, how well they understood and explained the technical concepts>,
+    "communication_score": <0-100, clarity, structure, and articulation>,
+    "feedback": "<2-3 sentences of constructive feedback>",
+    "key_points_covered": ["<list of key concepts they correctly addressed>"],
+    "missed_points": ["<list of important concepts they missed or could improve>"]
+}}
+
+IMPORTANT EVALUATION GUIDELINES:
+- If the answer contains CODE, evaluate the code's correctness and approach, not just keywords
+- Consider semantic equivalence (e.g., "linear time" = "O(n)", "calls itself" = "recursion")
+- A correct algorithm implementation should score high even without textual explanation
+- Focus on whether they UNDERSTOOD the concept, not just whether they used specific words
+- Be fair but rigorous - this is interview preparation
+
+Respond ONLY with the JSON object, no other text."""
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3,
+            max_tokens=500
+        )
+
+        result_text = response.choices[0].message.content.strip()
+
+        # Clean up the response - remove markdown code blocks if present
+        if result_text.startswith("```"):
+            result_text = re.sub(r'^```json?\s*', '', result_text)
+            result_text = re.sub(r'\s*```$', '', result_text)
+
+        result = json.loads(result_text)
+
+        technical = float(result.get("technical_score", 50))
+        communication = float(result.get("communication_score", 50))
+        overall = (technical * 0.7) + (communication * 0.3)
+
+        return {
+            "score": round(overall, 1),
+            "technical": round(technical, 1),
+            "communication": round(communication, 1),
+            "feedback": result.get("feedback", ""),
+            "key_points_covered": result.get("key_points_covered", []),
+            "missed_points": result.get("missed_points", [])
+        }
+
+    except Exception as e:
+        print(f"LLM evaluation failed: {e}, falling back to keyword matching")
+        return evaluate_with_keywords(answer, question)
+
+
+async def analyze_with_llm(interview: Interview, detailed_feedback: List[Dict], overall_score: float) -> Dict[str, Any]:
+    """Use LLM to generate overall interview analysis."""
+
+    feedback_summary = "\n".join([
+        f"Q: {f['question'][:50]}... | Score: {f['score']} | Feedback: {f['feedback']}"
+        for f in detailed_feedback
+    ])
+
+    prompt = f"""You are an expert interview coach analyzing a candidate's overall performance.
+
+ROLE: {interview.role}
+COMPANY: {interview.company or 'General'}
+OVERALL SCORE: {overall_score}/100
+
+QUESTION-BY-QUESTION PERFORMANCE:
+{feedback_summary}
+
+Based on this performance, provide:
+{{
+    "strengths": ["<3-4 specific strengths demonstrated>"],
+    "weaknesses": ["<2-3 areas needing improvement>"],
+    "suggestions": ["<3-4 actionable improvement tips specific to their performance>"]
+}}
+
+Be specific and constructive. Reference their actual answers where relevant.
+Respond ONLY with the JSON object."""
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3,
+            max_tokens=400
+        )
+
+        result_text = response.choices[0].message.content.strip()
+        if result_text.startswith("```"):
+            result_text = re.sub(r'^```json?\s*', '', result_text)
+            result_text = re.sub(r'\s*```$', '', result_text)
+
+        return json.loads(result_text)
+
+    except Exception as e:
+        print(f"LLM analysis failed: {e}")
+        return {"strengths": [], "weaknesses": [], "suggestions": []}
+
+
+def evaluate_with_keywords(answer: str, question: Question) -> Dict[str, Any]:
+    """Fallback keyword-based evaluation when LLM is not available."""
+
     if not answer or len(answer.strip()) < 10:
         return {
             "score": 0,
@@ -79,15 +223,54 @@ def evaluate_single_answer(answer: str, question: Question) -> Dict[str, Any]:
     expected = question.expected_answer or ""
     key_points = question.key_points.split(",") if question.key_points else []
 
-    similarity_score = calculate_semantic_similarity(answer, expected)
+    # Calculate similarity
+    answer_lower = answer.lower()
+    expected_lower = expected.lower()
 
+    answer_words = set(re.findall(r'\b\w+\b', answer_lower))
+    expected_words = set(re.findall(r'\b\w+\b', expected_lower))
+
+    if expected_words:
+        overlap = len(answer_words & expected_words)
+        similarity_score = (overlap / len(expected_words | answer_words)) * 100
+    else:
+        similarity_score = min(len(answer.split()) / 50 * 100, 70)
+
+    # Check key points with synonyms
     key_points_covered = []
     missed_points = []
+
+    synonyms = {
+        "o(n)": ["linear time", "single pass", "one pass", "n time"],
+        "o(1)": ["constant time", "constant space"],
+        "recursion": ["recursive", "recursively", "calls itself"],
+        "hash map": ["hashmap", "dictionary", "dict", "hash table"],
+        "two pointers": ["two pointer", "2 pointers", "dual pointer"],
+        "binary search": ["bisect", "divide and conquer"],
+        "dynamic programming": ["dp", "memoization", "memo"],
+    }
+
     for point in key_points:
         point = point.strip().lower()
-        if point and point in answer.lower():
+        if not point:
+            continue
+
+        found = point in answer_lower
+
+        # Check synonyms
+        if not found:
+            for key, syns in synonyms.items():
+                if point in key or key in point:
+                    for syn in syns:
+                        if syn in answer_lower:
+                            found = True
+                            break
+                if found:
+                    break
+
+        if found:
             key_points_covered.append(point)
-        elif point:
+        else:
             missed_points.append(point)
 
     if key_points:
@@ -96,9 +279,7 @@ def evaluate_single_answer(answer: str, question: Question) -> Dict[str, Any]:
         coverage_score = similarity_score
 
     technical_score = (similarity_score * 0.4) + (coverage_score * 0.6)
-
     communication_score = evaluate_communication(answer)
-
     overall = (technical_score * 0.7) + (communication_score * 0.3)
 
     feedback = generate_answer_feedback(technical_score, communication_score, key_points_covered, missed_points)
@@ -113,30 +294,9 @@ def evaluate_single_answer(answer: str, question: Question) -> Dict[str, Any]:
     }
 
 
-def calculate_semantic_similarity(answer: str, expected: str) -> float:
-    if not expected:
-        return min(len(answer.split()) / 50 * 100, 70)
-
-    answer_lower = answer.lower()
-    expected_lower = expected.lower()
-
-    answer_words = set(re.findall(r'\b\w+\b', answer_lower))
-    expected_words = set(re.findall(r'\b\w+\b', expected_lower))
-
-    if not expected_words:
-        return 50
-
-    overlap = len(answer_words & expected_words)
-    jaccard = overlap / len(expected_words | answer_words) if (expected_words | answer_words) else 0
-
-    sequence_ratio = SequenceMatcher(None, answer_lower, expected_lower).ratio()
-
-    return ((jaccard * 50) + (sequence_ratio * 50))
-
-
 def evaluate_communication(answer: str) -> float:
+    """Evaluate communication quality of the answer."""
     score = 50
-
     words = answer.split()
     word_count = len(words)
 
@@ -164,6 +324,7 @@ def evaluate_communication(answer: str) -> float:
 
 def generate_answer_feedback(technical_score: float, communication_score: float,
                              key_points_covered: List[str], missed_points: List[str]) -> str:
+    """Generate feedback for a single answer."""
     feedback_parts = []
 
     if technical_score >= 80:
@@ -192,6 +353,7 @@ def generate_answer_feedback(technical_score: float, communication_score: float,
 
 
 def analyze_performance(scores: List[Dict], detailed: List[Dict]) -> tuple:
+    """Analyze overall performance from scores."""
     strengths = []
     weaknesses = []
 
@@ -225,6 +387,7 @@ def analyze_performance(scores: List[Dict], detailed: List[Dict]) -> tuple:
 
 
 def generate_suggestions(weaknesses: List[str], role: str) -> List[str]:
+    """Generate improvement suggestions based on weaknesses."""
     suggestions = []
 
     if any("technical" in w.lower() for w in weaknesses):
@@ -248,6 +411,7 @@ def generate_suggestions(weaknesses: List[str], role: str) -> List[str]:
 
 
 def predict_level(overall_score: float, company: str) -> str:
+    """Predict candidate level based on score."""
     thresholds = calculate_level_thresholds(company)
 
     for level, range_vals in thresholds.items():
@@ -259,6 +423,7 @@ def predict_level(overall_score: float, company: str) -> str:
 
 
 def generate_summary(technical: float, communication: float, overall: float) -> str:
+    """Generate performance summary."""
     if overall >= 80:
         performance = "Excellent"
     elif overall >= 65:
