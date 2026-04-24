@@ -38,7 +38,7 @@ export default function InterviewResult() {
   if (!interview || !interview.overall_score) {
     return (
       <div className="max-w-3xl mx-auto px-4 py-8 text-center">
-        <h2 className="text-xl font-semibold text-gray-900">Results not available</h2>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Results not available</h2>
         <Link to="/dashboard" className="btn-primary mt-4 inline-block">
           Back to Dashboard
         </Link>
@@ -47,28 +47,28 @@ export default function InterviewResult() {
   }
 
   const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-600';
-    if (score >= 60) return 'text-yellow-600';
-    return 'text-red-600';
+    if (score >= 80) return 'text-green-600 dark:text-green-400';
+    if (score >= 60) return 'text-yellow-600 dark:text-yellow-400';
+    return 'text-red-600 dark:text-red-400';
   };
 
   const getScoreBg = (score: number) => {
-    if (score >= 80) return 'bg-green-100';
-    if (score >= 60) return 'bg-yellow-100';
-    return 'bg-red-100';
+    if (score >= 80) return '!bg-green-100 dark:!bg-green-900/40';
+    if (score >= 60) return '!bg-yellow-100 dark:!bg-yellow-900/40';
+    return '!bg-red-100 dark:!bg-red-900/40';
   };
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <Link to="/dashboard" className="flex items-center text-gray-600 hover:text-gray-900 mb-6">
+      <Link to="/dashboard" className="flex items-center text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white mb-6">
         <ArrowLeft className="h-5 w-5 mr-2" />
         Back to Dashboard
       </Link>
 
       <div className="text-center mb-8">
         <Trophy className="h-16 w-16 text-yellow-500 mx-auto mb-4" />
-        <h1 className="text-3xl font-bold text-gray-900">Interview Complete!</h1>
-        <p className="text-gray-600 mt-2">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Interview Complete!</h1>
+        <p className="text-gray-600 dark:text-gray-300 mt-2">
           {interview.role} {interview.company && `• ${interview.company}`}
         </p>
       </div>
@@ -76,7 +76,7 @@ export default function InterviewResult() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className={`card text-center ${getScoreBg(interview.overall_score)}`}>
           <Target className={`h-8 w-8 mx-auto mb-2 ${getScoreColor(interview.overall_score)}`} />
-          <p className="text-sm text-gray-600">Overall Score</p>
+          <p className="text-sm text-gray-700 dark:text-gray-200">Overall Score</p>
           <p className={`text-4xl font-bold ${getScoreColor(interview.overall_score)}`}>
             {interview.overall_score}
           </p>
@@ -84,7 +84,7 @@ export default function InterviewResult() {
 
         <div className={`card text-center ${getScoreBg(interview.technical_score || 0)}`}>
           <TrendingUp className={`h-8 w-8 mx-auto mb-2 ${getScoreColor(interview.technical_score || 0)}`} />
-          <p className="text-sm text-gray-600">Technical Score</p>
+          <p className="text-sm text-gray-700 dark:text-gray-200">Technical Score</p>
           <p className={`text-4xl font-bold ${getScoreColor(interview.technical_score || 0)}`}>
             {interview.technical_score || 0}
           </p>
@@ -92,7 +92,7 @@ export default function InterviewResult() {
 
         <div className={`card text-center ${getScoreBg(interview.communication_score || 0)}`}>
           <MessageSquare className={`h-8 w-8 mx-auto mb-2 ${getScoreColor(interview.communication_score || 0)}`} />
-          <p className="text-sm text-gray-600">Communication</p>
+          <p className="text-sm text-gray-700 dark:text-gray-200">Communication</p>
           <p className={`text-4xl font-bold ${getScoreColor(interview.communication_score || 0)}`}>
             {interview.communication_score || 0}
           </p>
@@ -110,7 +110,7 @@ export default function InterviewResult() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div className="card">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
             <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
             Strengths
           </h2>
@@ -119,17 +119,17 @@ export default function InterviewResult() {
               {interview.strengths.map((strength, index) => (
                 <li key={index} className="flex items-start">
                   <CheckCircle className="h-5 w-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">{strength}</span>
+                  <span className="text-gray-700 dark:text-gray-200">{strength}</span>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="text-gray-500">No specific strengths identified</p>
+            <p className="text-gray-500 dark:text-gray-400">No specific strengths identified</p>
           )}
         </div>
 
         <div className="card">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
             <XCircle className="h-5 w-5 text-red-500 mr-2" />
             Areas for Improvement
           </h2>
@@ -138,32 +138,32 @@ export default function InterviewResult() {
               {interview.weaknesses.map((weakness, index) => (
                 <li key={index} className="flex items-start">
                   <XCircle className="h-5 w-5 text-red-500 mr-2 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">{weakness}</span>
+                  <span className="text-gray-700 dark:text-gray-200">{weakness}</span>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="text-gray-500">No specific areas identified</p>
+            <p className="text-gray-500 dark:text-gray-400">No specific areas identified</p>
           )}
         </div>
       </div>
 
       <div className="card mb-8">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
           <Lightbulb className="h-5 w-5 text-yellow-500 mr-2" />
           Suggestions for Improvement
         </h2>
         {interview.suggestions && interview.suggestions.length > 0 ? (
           <ul className="space-y-3">
             {interview.suggestions.map((suggestion, index) => (
-              <li key={index} className="flex items-start bg-yellow-50 p-3 rounded-lg">
+              <li key={index} className="flex items-start bg-yellow-50 dark:bg-yellow-900/30 p-3 rounded-lg">
                 <Lightbulb className="h-5 w-5 text-yellow-500 mr-2 mt-0.5 flex-shrink-0" />
-                <span className="text-gray-700">{suggestion}</span>
+                <span className="text-gray-700 dark:text-gray-200">{suggestion}</span>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="text-gray-500">No specific suggestions</p>
+          <p className="text-gray-500 dark:text-gray-400">No specific suggestions</p>
         )}
       </div>
 

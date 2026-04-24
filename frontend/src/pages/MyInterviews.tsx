@@ -48,8 +48,8 @@ export default function MyInterviews() {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">My Interviews</h1>
-          <p className="text-gray-600 mt-1">Track your interview practice history</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">My Interviews</h1>
+          <p className="text-gray-600 dark:text-gray-300 mt-1">Track your interview practice history</p>
         </div>
         <Link to="/interview/new" className="btn-primary">
           Start New Interview
@@ -58,9 +58,9 @@ export default function MyInterviews() {
 
       {interviews.length === 0 ? (
         <div className="card text-center py-12">
-          <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">No interviews yet</h2>
-          <p className="text-gray-600 mb-6">Start practicing to see your history here</p>
+          <FileText className="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No interviews yet</h2>
+          <p className="text-gray-600 dark:text-gray-300 mb-6">Start practicing to see your history here</p>
           <Link to="/interview/new" className="btn-primary inline-block">
             Start Your First Interview
           </Link>
@@ -78,16 +78,16 @@ export default function MyInterviews() {
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-2">
-                    <h3 className="text-lg font-semibold text-gray-900">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                       {interview.role}
                     </h3>
                     {interview.company && (
-                      <span className="text-gray-500">• {interview.company}</span>
+                      <span className="text-gray-500 dark:text-gray-400">• {interview.company}</span>
                     )}
                     {getStatusBadge(interview.status)}
                   </div>
 
-                  <div className="flex items-center space-x-4 text-sm text-gray-500">
+                  <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
                     <span className="flex items-center">
                       <Calendar className="h-4 w-4 mr-1" />
                       {new Date(interview.created_at).toLocaleDateString()}
@@ -105,14 +105,14 @@ export default function MyInterviews() {
                 <div className="flex items-center space-x-4">
                   {interview.overall_score && (
                     <div className="text-right">
-                      <div className="flex items-center text-green-600">
+                      <div className="flex items-center text-green-600 dark:text-green-400">
                         <TrendingUp className="h-5 w-5 mr-1" />
                         <span className="text-2xl font-bold">{interview.overall_score}</span>
                       </div>
-                      <span className="text-xs text-gray-500">Overall Score</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">Overall Score</span>
                     </div>
                   )}
-                  <ChevronRight className="h-5 w-5 text-gray-400" />
+                  <ChevronRight className="h-5 w-5 text-gray-400 dark:text-gray-600" />
                 </div>
               </div>
             </Link>

@@ -75,12 +75,16 @@ export interface QuestionAsked {
   id: number;
   question: string;
   type: string;
+  time_limit_minutes?: number;
 }
 
 export interface Response {
   question_id: number;
   answer: string;
   submitted_at: string;
+  follow_up_question?: string;
+  follow_up_answer?: string;
+  follow_up_submitted_at?: string;
 }
 
 export interface AuthResponse {

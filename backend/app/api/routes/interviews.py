@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 from typing import List
@@ -8,10 +9,21 @@ from app.core.database import get_db
 from app.api.deps import get_current_user, get_current_candidate
 from app.models.user import User
 from app.models.candidate import Candidate
+from app.models.question import Question
 from app.models.interview import Interview, InterviewStatus
 from app.schemas.interview import InterviewCreate, InterviewResponse, AnswerSubmit
 from app.services.interview_engine import get_interview_questions
 from app.services.evaluation_engine import evaluate_interview
+from app.services.transcription import transcribe_audio, generate_follow_up
+
+
+class FollowUpSubmit(BaseModel):
+    question_id: int
+    follow_up_answer: str
+
+
+class TranscribeResponse(BaseModel):
+    text: str
 
 router = APIRouter()
 
@@ -68,18 +80,81 @@ async def submit_answer(
     if interview.status != InterviewStatus.IN_PROGRESS:
         raise HTTPException(status_code=400, detail="Interview is not in progress")
 
+    question = db.query(Question).filter(Question.id == answer_data.question_id).first()
+    follow_up = None
+    if question:
+        follow_up = await generate_follow_up(question.question_text, answer_data.answer)
+
     responses = list(interview.responses or [])
-    responses.append({
+    new_response = {
         "question_id": answer_data.question_id,
         "answer": answer_data.answer,
-        "submitted_at": datetime.utcnow().isoformat()
-    })
+        "submitted_at": datetime.utcnow().isoformat(),
+    }
+    if follow_up:
+        new_response["follow_up_question"] = follow_up
+    responses.append(new_response)
     interview.responses = responses
     flag_modified(interview, "responses")
 
     db.commit()
     db.refresh(interview)
     return interview
+
+
+@router.post("/{interview_id}/follow-up", response_model=InterviewResponse)
+async def submit_follow_up(
+    interview_id: int,
+    data: FollowUpSubmit,
+    current_user: User = Depends(get_current_candidate),
+    db: Session = Depends(get_db)
+):
+    candidate = db.query(Candidate).filter(Candidate.user_id == current_user.id).first()
+    interview = db.query(Interview).filter(
+        Interview.id == interview_id,
+        Interview.candidate_id == candidate.id
+    ).first()
+
+    if not interview:
+        raise HTTPException(status_code=404, detail="Interview not found")
+
+    if interview.status != InterviewStatus.IN_PROGRESS:
+        raise HTTPException(status_code=400, detail="Interview is not in progress")
+
+    responses = list(interview.responses or [])
+    target = None
+    for r in reversed(responses):
+        if r.get("question_id") == data.question_id and "follow_up_question" in r and "follow_up_answer" not in r:
+            target = r
+            break
+    if not target:
+        raise HTTPException(status_code=400, detail="No pending follow-up for this question")
+
+    target["follow_up_answer"] = data.follow_up_answer
+    target["follow_up_submitted_at"] = datetime.utcnow().isoformat()
+    interview.responses = responses
+    flag_modified(interview, "responses")
+
+    db.commit()
+    db.refresh(interview)
+    return interview
+
+
+@router.post("/transcribe", response_model=TranscribeResponse)
+async def transcribe(
+    audio: UploadFile = File(...),
+    current_user: User = Depends(get_current_candidate),
+):
+    content = await audio.read()
+    if not content:
+        raise HTTPException(status_code=400, detail="Empty audio file")
+    try:
+        text = await transcribe_audio(content, audio.filename or "audio.webm")
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Transcription failed: {e}")
+    return TranscribeResponse(text=text)
 
 
 @router.post("/{interview_id}/complete", response_model=InterviewResponse)

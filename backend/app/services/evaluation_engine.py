@@ -24,16 +24,22 @@ async def evaluate_interview(interview: Interview, db: Session) -> Dict[str, Any
     for response in responses_data:
         question_id = response.get("question_id")
         answer = response.get("answer", "")
+        follow_up_q = response.get("follow_up_question")
+        follow_up_a = response.get("follow_up_answer")
 
         question = db.query(Question).filter(Question.id == question_id).first()
         if not question:
             continue
 
+        combined_answer = answer
+        if follow_up_q and follow_up_a:
+            combined_answer = f"{answer}\n\n[Follow-up] {follow_up_q}\n[Candidate] {follow_up_a}"
+
         # Use LLM evaluation if available, otherwise fallback to keyword-based
         if client:
-            score_result = await evaluate_with_llm(answer, question)
+            score_result = await evaluate_with_llm(combined_answer, question)
         else:
-            score_result = evaluate_with_keywords(answer, question)
+            score_result = evaluate_with_keywords(combined_answer, question)
 
         question_scores.append(score_result)
         detailed_feedback.append({

@@ -95,6 +95,18 @@ export const interviewApi = {
     const response = await api.post(`/interviews/${interviewId}/answer`, data);
     return response.data;
   },
+  submitFollowUp: async (interviewId: number, data: { question_id: number; follow_up_answer: string }): Promise<Interview> => {
+    const response = await api.post(`/interviews/${interviewId}/follow-up`, data);
+    return response.data;
+  },
+  transcribe: async (audio: Blob, filename = 'recording.webm'): Promise<{ text: string }> => {
+    const formData = new FormData();
+    formData.append('audio', audio, filename);
+    const response = await api.post('/interviews/transcribe', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
   complete: async (interviewId: number): Promise<Interview> => {
     const response = await api.post(`/interviews/${interviewId}/complete`);
     return response.data;
