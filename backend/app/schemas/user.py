@@ -1,19 +1,8 @@
-from pydantic import BaseModel, EmailStr
-from typing import Optional
 from datetime import datetime
+
+from pydantic import BaseModel
+
 from app.models.user import UserRole
-
-
-class UserCreate(BaseModel):
-    email: EmailStr
-    password: str
-    full_name: str
-    role: UserRole = UserRole.CANDIDATE
-
-
-class UserLogin(BaseModel):
-    email: EmailStr
-    password: str
 
 
 class UserResponse(BaseModel):

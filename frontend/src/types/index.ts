@@ -104,12 +104,6 @@ export interface Response {
   follow_up_submitted_at?: string;
 }
 
-export interface AuthResponse {
-  access_token: string;
-  token_type: string;
-  user: User;
-}
-
 export interface EvaluationResult {
   interview_id: number;
   technical_score: number;

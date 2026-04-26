@@ -1,16 +1,14 @@
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const navigate = useNavigate();
   const location = useLocation();
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+  const handleLogout = async () => {
+    await logout();
   };
 
   const linkClass = (path: string) => {
@@ -89,14 +87,9 @@ export default function Navbar() {
                 </button>
               </>
             ) : (
-              <div className="flex items-center gap-6">
-                <Link to="/login" className="nav-link">
-                  Sign in
-                </Link>
-                <Link to="/register" className="btn-primary">
-                  Get started
-                </Link>
-              </div>
+              <Link to="/login" className="btn-primary">
+                Sign in
+              </Link>
             )}
           </div>
         </div>

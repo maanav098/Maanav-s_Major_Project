@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { AuthResponse, Candidate, Job, Interview, Question, EvaluationResult, JobInterviewSummary, RecruiterCandidate, JdAnalysis } from '../types';
+import type { Candidate, Job, Interview, Question, EvaluationResult, JobInterviewSummary, RecruiterCandidate, JdAnalysis } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
@@ -31,12 +31,8 @@ api.interceptors.response.use(
 );
 
 export const authApi = {
-  register: async (data: { email: string; password: string; full_name: string; role: string }): Promise<AuthResponse> => {
-    const response = await api.post('/auth/register', data);
-    return response.data;
-  },
-  login: async (data: { email: string; password: string }): Promise<AuthResponse> => {
-    const response = await api.post('/auth/login', data);
+  workosLogout: async (): Promise<{ logout_url: string | null }> => {
+    const response = await api.get('/auth/workos/logout');
     return response.data;
   },
 };

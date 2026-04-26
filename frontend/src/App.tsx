@@ -4,7 +4,6 @@ import { ThemeProvider } from './context/ThemeContext';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Login from './pages/Login';
-import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import NewInterview from './pages/NewInterview';
 import Interview from './pages/Interview';
@@ -16,6 +15,7 @@ import JobDetail from './pages/JobDetail';
 import Candidates from './pages/Candidates';
 import Openings from './pages/Openings';
 import OpeningDetail from './pages/OpeningDetail';
+import WorkosCallback from './pages/WorkosCallback';
 import RecruiterRoute from './components/RecruiterRoute';
 import './index.css';
 
@@ -69,14 +69,8 @@ function AppRoutes() {
             </PublicRoute>
           }
         />
-        <Route
-          path="/register"
-          element={
-            <PublicRoute>
-              <Register />
-            </PublicRoute>
-          }
-        />
+        <Route path="/register" element={<Navigate to="/login" replace />} />
+        <Route path="/auth/workos-callback" element={<WorkosCallback />} />
         <Route
           path="/dashboard"
           element={

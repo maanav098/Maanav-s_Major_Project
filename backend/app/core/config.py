@@ -16,6 +16,11 @@ class Settings(BaseSettings):
 
     OPENAI_API_KEY: str = ""
 
+    WORKOS_API_KEY: str = ""
+    WORKOS_CLIENT_ID: str = ""
+    WORKOS_REDIRECT_URI: str = "http://localhost:8000/api/auth/workos/callback"
+    FRONTEND_URL: str = "http://localhost:5173"
+
     PISTON_URL: str = "http://piston:2000"
 
     class Config:

@@ -5,9 +5,8 @@ import { authApi } from '../services/api';
 interface AuthContextType {
   user: User | null;
   token: string | null;
-  login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, fullName: string, role: string) => Promise<void>;
-  logout: () => void;
+  setSession: (token: string, user: User) => void;
+  logout: () => Promise<void>;
   isLoading: boolean;
 }
 
@@ -29,31 +28,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   }, []);
 
-  const login = async (email: string, password: string) => {
-    const response = await authApi.login({ email, password });
-    setToken(response.access_token);
-    setUser(response.user);
-    localStorage.setItem('token', response.access_token);
-    localStorage.setItem('user', JSON.stringify(response.user));
+  const setSession = (newToken: string, newUser: User) => {
+    setToken(newToken);
+    setUser(newUser);
+    localStorage.setItem('token', newToken);
+    localStorage.setItem('user', JSON.stringify(newUser));
   };
 
-  const register = async (email: string, password: string, fullName: string, role: string) => {
-    const response = await authApi.register({ email, password, full_name: fullName, role });
-    setToken(response.access_token);
-    setUser(response.user);
-    localStorage.setItem('token', response.access_token);
-    localStorage.setItem('user', JSON.stringify(response.user));
-  };
+  const logout = async () => {
+    let logoutUrl: string | null = null;
+    try {
+      const res = await authApi.workosLogout();
+      logoutUrl = res.logout_url;
+    } catch {
+      // Best effort — fall through to local-only sign-out.
+    }
 
-  const logout = () => {
     setToken(null);
     setUser(null);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+
+    window.location.href = logoutUrl || '/login';
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, register, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, token, setSession, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

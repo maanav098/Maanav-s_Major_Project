@@ -1,4 +1,4 @@
-from app.schemas.user import UserCreate, UserResponse, UserLogin, Token
+from app.schemas.user import UserResponse, Token
 from app.schemas.candidate import CandidateCreate, CandidateResponse, CandidateUpdate
 from app.schemas.job import JobCreate, JobResponse, JobUpdate
 from app.schemas.interview import InterviewCreate, InterviewResponse, InterviewUpdate

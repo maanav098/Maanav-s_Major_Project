@@ -1,112 +1,78 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
 export default function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
-  const navigate = useNavigate();
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    try {
-      await login(email, password);
-      navigate('/dashboard');
-    } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Login failed. Please check your credentials.';
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [role, setRole] = useState<'candidate' | 'recruiter'>('candidate');
 
   return (
     <div className="min-h-[calc(100vh-4rem)] flex items-start justify-center pt-20 pb-16 px-6">
       <div className="w-full max-w-md fade-rise">
-        <p className="eyebrow">Member access</p>
+        <p className="eyebrow">Sign in</p>
         <h1
           className="heading-display-italic mt-3"
           style={{ fontSize: 'clamp(2.4rem, 4.6vw, 3.2rem)' }}
         >
-          Sign in.
+          Welcome.
         </h1>
         <p className="mt-3 text-ink-muted" style={{ fontSize: '15px' }}>
-          Pick up where you left off.
+          Sign-in and sign-up are handled by WorkOS.
         </p>
 
         <hr className="rule" style={{ margin: '2rem 0 1.5rem' }} />
 
-        {error && (
-          <p
-            className="mb-6"
+        <p className="eyebrow mb-3">First time? Choose your role</p>
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => setRole('candidate')}
+            className={role === 'candidate' ? 'pill pill-active' : 'pill'}
             style={{
-              color: 'var(--accent)',
-              fontSize: '13px',
-              borderLeft: '2px solid var(--accent)',
-              paddingLeft: '0.75rem',
+              flexDirection: 'column',
+              alignItems: 'flex-start',
+              padding: '0.85rem 1rem',
+              textAlign: 'left',
             }}
           >
-            {error}
-          </p>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-7">
-          <div>
-            <label htmlFor="email" className="eyebrow block mb-2">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="input-field"
-              placeholder="you@example.com"
-              autoComplete="email"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="password" className="eyebrow block mb-2">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="input-field"
-              placeholder="••••••••"
-              autoComplete="current-password"
-            />
-          </div>
-
-          <button type="submit" disabled={loading} className="btn-primary w-full" style={{ marginTop: '0.5rem' }}>
-            {loading ? 'Signing in…' : 'Sign in'}
+            <span style={{ fontSize: '14px', fontWeight: 500 }}>Candidate</span>
+            <span
+              className="mono"
+              style={{ fontSize: '11px', marginTop: '0.25rem', opacity: 0.75 }}
+            >
+              Looking for practice
+            </span>
           </button>
-        </form>
-
-        <hr className="rule" style={{ margin: '2.5rem 0 1.25rem' }} />
-
-        <p className="text-ink-muted" style={{ fontSize: '14px' }}>
-          New here?{' '}
-          <Link
-            to="/register"
-            className="text-accent"
-            style={{ borderBottom: '1px solid var(--accent)' }}
+          <button
+            type="button"
+            onClick={() => setRole('recruiter')}
+            className={role === 'recruiter' ? 'pill pill-active' : 'pill'}
+            style={{
+              flexDirection: 'column',
+              alignItems: 'flex-start',
+              padding: '0.85rem 1rem',
+              textAlign: 'left',
+            }}
           >
-            Create an account
-          </Link>
+            <span style={{ fontSize: '14px', fontWeight: 500 }}>Recruiter</span>
+            <span
+              className="mono"
+              style={{ fontSize: '11px', marginTop: '0.25rem', opacity: 0.75 }}
+            >
+              Hiring talent
+            </span>
+          </button>
+        </div>
+        <p className="text-ink-faint mt-3" style={{ fontSize: '12px' }}>
+          Only used the first time you sign in. Returning users keep their existing role.
         </p>
+
+        <a
+          href={`${API_URL}/auth/workos/login?role=${role}`}
+          className="btn-primary w-full mt-8"
+          style={{ display: 'flex', textDecoration: 'none' }}
+        >
+          Continue with WorkOS
+        </a>
       </div>
     </div>
   );
