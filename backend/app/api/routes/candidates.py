@@ -6,6 +6,8 @@ from app.core.database import get_db
 from app.api.deps import get_current_user, get_current_candidate
 from app.models.user import User
 from app.models.candidate import Candidate
+from app.models.interview import Interview
+from app.models.job import Job
 from app.schemas.candidate import CandidateResponse, CandidateUpdate
 from app.services.resume_parser import parse_resume
 
@@ -71,4 +73,24 @@ async def get_candidate(
     candidate = db.query(Candidate).filter(Candidate.id == candidate_id).first()
     if not candidate:
         raise HTTPException(status_code=404, detail="Candidate not found")
+
+    role = current_user.role.value
+    if role == "candidate":
+        if candidate.user_id != current_user.id:
+            raise HTTPException(status_code=404, detail="Candidate not found")
+    elif role == "recruiter":
+        has_overlap = (
+            db.query(Interview.id)
+            .join(Job, Job.id == Interview.job_id)
+            .filter(
+                Interview.candidate_id == candidate_id,
+                Job.recruiter_id == current_user.id,
+            )
+            .first()
+        )
+        if not has_overlap:
+            raise HTTPException(status_code=404, detail="Candidate not found")
+    elif role != "admin":
+        raise HTTPException(status_code=403, detail="Access denied")
+
     return candidate

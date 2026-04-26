@@ -20,6 +20,13 @@ export interface Candidate {
   created_at: string;
 }
 
+export type QuestionCategory = 'technical' | 'behavioral' | 'system_design' | 'coding' | 'case_study';
+
+export interface CustomQuestion {
+  question_text: string;
+  question_type: QuestionCategory;
+}
+
 export interface Job {
   id: number;
   recruiter_id: number;
@@ -34,7 +41,17 @@ export interface Job {
   location?: string;
   salary_range?: string;
   status: 'draft' | 'open' | 'closed';
+  num_questions: number;
+  question_categories: QuestionCategory[];
+  custom_questions: CustomQuestion[];
   created_at: string;
+}
+
+export interface JdAnalysis {
+  suggested_categories: QuestionCategory[];
+  suggested_skills: string[];
+  suggested_num_questions: number;
+  rationale?: string;
 }
 
 export interface Question {
@@ -103,4 +120,30 @@ export interface EvaluationResult {
   suggestions: string[];
   level_prediction: string;
   detailed_feedback: Record<string, unknown>;
+}
+
+export interface JobInterviewSummary {
+  interview_id: number;
+  candidate_id: number;
+  candidate_full_name: string;
+  candidate_email: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'evaluated';
+  overall_score?: number;
+  technical_score?: number;
+  communication_score?: number;
+  level_prediction?: string;
+  started_at?: string;
+  completed_at?: string;
+  created_at: string;
+}
+
+export interface RecruiterCandidate {
+  candidate_id: number;
+  user_id: number;
+  full_name: string;
+  email: string;
+  interview_count: number;
+  best_overall_score?: number;
+  latest_interview_at?: string;
+  latest_interview_id: number;
 }

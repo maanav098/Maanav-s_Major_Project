@@ -16,6 +16,8 @@ class Settings(BaseSettings):
 
     OPENAI_API_KEY: str = ""
 
+    PISTON_URL: str = "http://piston:2000"
+
     class Config:
         env_file = ".env"
 

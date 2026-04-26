@@ -4,6 +4,11 @@ from datetime import datetime
 from app.models.job import JobStatus
 
 
+class CustomQuestion(BaseModel):
+    question_text: str
+    question_type: str = "technical"
+
+
 class JobCreate(BaseModel):
     title: str
     role: str
@@ -15,6 +20,9 @@ class JobCreate(BaseModel):
     experience_max: Optional[int] = None
     location: Optional[str] = None
     salary_range: Optional[str] = None
+    num_questions: int = 10
+    question_categories: List[str] = []
+    custom_questions: List[CustomQuestion] = []
 
 
 class JobUpdate(BaseModel):
@@ -27,6 +35,9 @@ class JobUpdate(BaseModel):
     location: Optional[str] = None
     salary_range: Optional[str] = None
     status: Optional[JobStatus] = None
+    num_questions: Optional[int] = None
+    question_categories: Optional[List[str]] = None
+    custom_questions: Optional[List[CustomQuestion]] = None
 
 
 class JobResponse(BaseModel):
@@ -43,7 +54,23 @@ class JobResponse(BaseModel):
     location: Optional[str]
     salary_range: Optional[str]
     status: JobStatus
+    num_questions: int = 10
+    question_categories: List[str] = []
+    custom_questions: List[CustomQuestion] = []
     created_at: datetime
 
     class Config:
         from_attributes = True
+
+
+class JdAnalysisRequest(BaseModel):
+    description: str
+    role: Optional[str] = None
+    company: Optional[str] = None
+
+
+class JdAnalysisResponse(BaseModel):
+    suggested_categories: List[str]
+    suggested_skills: List[str]
+    suggested_num_questions: int
+    rationale: Optional[str] = None

@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { interviewApi } from '../services/api';
-import { Play, Building2, Briefcase, AlertCircle, Hash } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { interviewApi, jobApi } from '../services/api';
+import type { Job } from '../types';
 
 const QUESTION_COUNTS = [5, 10, 15, 20];
 
@@ -12,7 +12,7 @@ const ROLES = [
   'Frontend Developer',
   'Backend Developer',
   'DevOps Engineer',
-  'Product Manager'
+  'Product Manager',
 ];
 
 const COMPANIES = [
@@ -22,17 +22,38 @@ const COMPANIES = [
   'Meta',
   'Apple',
   'Netflix',
-  'Startup'
+  'Startup',
 ];
 
 export default function NewInterview() {
   const [searchParams] = useSearchParams();
+  const jobIdParam = searchParams.get('job_id');
+  const jobId = jobIdParam ? Number(jobIdParam) : null;
+
   const [role, setRole] = useState(searchParams.get('role') || '');
   const [company, setCompany] = useState('');
   const [numQuestions, setNumQuestions] = useState(10);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [job, setJob] = useState<Job | null>(null);
+  const [jobLoading, setJobLoading] = useState(Boolean(jobId));
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!jobId) return;
+    setJobLoading(true);
+    jobApi
+      .get(jobId)
+      .then((j) => {
+        setJob(j);
+        setRole(j.role);
+        setCompany(j.company);
+      })
+      .catch(() => setError('Failed to load opening'))
+      .finally(() => setJobLoading(false));
+  }, [jobId]);
+
+  const effectiveCount = job?.num_questions ?? numQuestions;
 
   const handleStartInterview = async () => {
     if (!role) {
@@ -44,129 +65,182 @@ export default function NewInterview() {
     setError('');
 
     try {
-      const interview = await interviewApi.start({ role, company: company || undefined, num_questions: numQuestions });
+      const interview = await interviewApi.start({
+        role,
+        company: company || undefined,
+        job_id: jobId ?? undefined,
+        num_questions: effectiveCount,
+      });
       navigate(`/interview/${interview.id}`);
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to start interview. Please try again.';
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to start interview. Please try again.';
       setError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Start Practice Interview</h1>
-        <p className="text-gray-600 dark:text-gray-300 mt-2">Select your target role and company to begin</p>
+  if (jobLoading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="spinner" />
       </div>
+    );
+  }
 
-      <div className="card">
-        {error && (
-          <div className="flex items-center space-x-2 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 p-3 rounded-lg mb-6">
-            <AlertCircle className="h-5 w-5" />
-            <span className="text-sm">{error}</span>
-          </div>
+  return (
+    <div className="max-w-3xl mx-auto px-6 lg:px-10 py-14">
+      <p className="eyebrow">{job ? 'Application' : 'Practice'}</p>
+      <h1
+        className="heading-display mt-3"
+        style={{ fontSize: 'clamp(2rem, 4vw, 2.8rem)' }}
+      >
+        {job ? (
+          <>
+            Apply to <span className="serif-italic">{job.title}</span>.
+          </>
+        ) : (
+          <>
+            Begin a <span className="serif-italic">practice</span> round.
+          </>
+        )}
+      </h1>
+      <p className="mt-4 text-ink-muted max-w-xl" style={{ fontSize: '15px' }}>
+        {job
+          ? "We'll tailor questions to this role. Your evaluation goes directly to the recruiter."
+          : 'Choose a target role and, optionally, a company style. The AI composes the question set from there.'}
+      </p>
+
+      {error && (
+        <p
+          className="mt-8"
+          style={{
+            color: 'var(--accent)',
+            fontSize: '13px',
+            borderLeft: '2px solid var(--accent)',
+            paddingLeft: '0.75rem',
+          }}
+        >
+          {error}
+        </p>
+      )}
+
+      <div className="mt-12 space-y-12">
+        {job ? (
+          <section>
+            <hr className="rule-accent" />
+            <div className="mt-5 flex items-start justify-between gap-4">
+              <div>
+                <p className="eyebrow text-accent">Applying for</p>
+                <h2 className="serif mt-2" style={{ fontSize: '22px' }}>
+                  {job.title}
+                </h2>
+                <p className="mt-1 text-ink-muted" style={{ fontSize: '14px' }}>
+                  {job.role} · {job.company}
+                </p>
+              </div>
+              <Link to="/openings" className="btn-text" style={{ fontSize: '13px' }}>
+                Change opening
+              </Link>
+            </div>
+          </section>
+        ) : (
+          <>
+            <section>
+              <p className="eyebrow">Target role *</p>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-4">
+                {ROLES.map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => setRole(r)}
+                    className={role === r ? 'pill pill-active' : 'pill'}
+                  >
+                    {r}
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <section>
+              <p className="eyebrow">Company style (optional)</p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+                {COMPANIES.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setCompany(company === c ? '' : c)}
+                    className={company === c ? 'pill pill-active' : 'pill'}
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-3 text-ink-faint" style={{ fontSize: '12px' }}>
+                Adjusts question style and difficulty.
+              </p>
+            </section>
+          </>
         )}
 
-        <div className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-              <div className="flex items-center space-x-2">
-                <Briefcase className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-                <span>Select Target Role *</span>
-              </div>
-            </label>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {ROLES.map((r) => (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() => setRole(r)}
-                  className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
-                    role === r
-                      ? 'border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-500'
-                      : 'border-gray-200 hover:border-gray-300 text-gray-700 dark:border-gray-600 dark:hover:border-gray-500 dark:text-gray-200'
-                  }`}
-                >
-                  {r}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-              <div className="flex items-center space-x-2">
-                <Building2 className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-                <span>Select Company Style (Optional)</span>
-              </div>
-            </label>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {COMPANIES.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setCompany(company === c ? '' : c)}
-                  className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
-                    company === c
-                      ? 'border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-500'
-                      : 'border-gray-200 hover:border-gray-300 text-gray-700 dark:border-gray-600 dark:hover:border-gray-500 dark:text-gray-200'
-                  }`}
-                >
-                  {c}
-                </button>
-              ))}
-            </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-              Company selection adjusts question style and difficulty
-            </p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-              <div className="flex items-center space-x-2">
-                <Hash className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-                <span>Number of Questions</span>
-              </div>
-            </label>
-            <div className="grid grid-cols-4 gap-3">
+        {!job && (
+          <section>
+            <p className="eyebrow">Number of questions</p>
+            <div className="grid grid-cols-4 gap-3 mt-4">
               {QUESTION_COUNTS.map((count) => (
                 <button
                   key={count}
                   type="button"
                   onClick={() => setNumQuestions(count)}
-                  className={`p-3 rounded-lg border-2 text-sm font-medium transition-all ${
-                    numQuestions === count
-                      ? 'border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-500'
-                      : 'border-gray-200 hover:border-gray-300 text-gray-700 dark:border-gray-600 dark:hover:border-gray-500 dark:text-gray-200'
-                  }`}
+                  className={numQuestions === count ? 'pill pill-active' : 'pill'}
+                  style={{ justifyContent: 'center' }}
                 >
-                  {count} Questions
+                  {count}
                 </button>
               ))}
             </div>
-          </div>
+          </section>
+        )}
 
-          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
-            <h3 className="font-medium text-gray-900 dark:text-white mb-2">Interview Details</h3>
-            <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-1">
-              <li>• {numQuestions} questions tailored to your role{company ? ` and ${company} style` : ''}</li>
-              <li>• Mix of technical, behavioral, and coding questions</li>
-              <li>• AI-powered evaluation and feedback</li>
-              <li>• Estimated time: {Math.round(numQuestions * 3)}-{Math.round(numQuestions * 5)} minutes</li>
-            </ul>
+        <section>
+          <hr className="rule" />
+          <div className="grid grid-cols-1 sm:grid-cols-3 mt-6 gap-y-4">
+            <div>
+              <p className="eyebrow">Length</p>
+              <p className="numeric mt-2" style={{ fontSize: '28px', lineHeight: 1, color: 'var(--ink)' }}>
+                {effectiveCount}
+              </p>
+              <p className="text-ink-muted mt-1" style={{ fontSize: '12px' }}>
+                questions
+              </p>
+            </div>
+            <div>
+              <p className="eyebrow">Estimated time</p>
+              <p className="numeric mt-2" style={{ fontSize: '28px', lineHeight: 1, color: 'var(--ink)' }}>
+                {Math.round(effectiveCount * 3)}–{Math.round(effectiveCount * 5)}
+              </p>
+              <p className="text-ink-muted mt-1" style={{ fontSize: '12px' }}>
+                minutes
+              </p>
+            </div>
+            <div>
+              <p className="eyebrow">Mix</p>
+              <p className="serif-italic text-ink mt-2" style={{ fontSize: '17px', lineHeight: 1.2 }}>
+                Technical, behavioural &amp; coding
+              </p>
+            </div>
           </div>
+        </section>
 
-          <button
-            onClick={handleStartInterview}
-            disabled={loading || !role}
-            className="btn-primary w-full flex items-center justify-center space-x-2"
-          >
-            <Play className="h-5 w-5" />
-            <span>{loading ? 'Starting...' : 'Start Interview'}</span>
-          </button>
-        </div>
+        <button
+          onClick={handleStartInterview}
+          disabled={loading || !role}
+          className="btn-primary"
+          style={{ width: '100%', padding: '0.85rem 1.25rem' }}
+        >
+          {loading ? 'Starting…' : job ? 'Apply & begin interview' : 'Begin interview'}
+        </button>
       </div>
     </div>
   );

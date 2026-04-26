@@ -1,6 +1,8 @@
+import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
-import { Play, History, FileText, Users, Briefcase, TrendingUp } from 'lucide-react';
+import { jobApi, recruiterApi } from '../services/api';
+import type { RecruiterCandidate } from '../types';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -12,101 +14,176 @@ export default function Dashboard() {
   return <RecruiterDashboard />;
 }
 
+function StatStrip({
+  items,
+}: {
+  items: { label: string; value: string; sub?: string; href?: string }[];
+}) {
+  return (
+    <div
+      className="grid grid-cols-1 sm:grid-cols-3 my-10"
+      style={{ borderTop: '1px solid var(--rule)', borderBottom: '1px solid var(--rule)' }}
+    >
+      {items.map((item, i) => {
+        const inner = (
+          <div
+            className="px-1 py-7 sm:py-9"
+            style={{
+              borderLeft: i === 0 ? 'none' : undefined,
+            }}
+          >
+            <p className="eyebrow">{item.label}</p>
+            <p
+              className="numeric mt-3"
+              style={{
+                fontSize: 'clamp(2.6rem, 5vw, 3.6rem)',
+                lineHeight: 1,
+                color: 'var(--ink)',
+              }}
+            >
+              {item.value}
+            </p>
+            {item.sub && (
+              <p className="mt-2 text-ink-muted" style={{ fontSize: '13px' }}>
+                {item.sub}
+              </p>
+            )}
+          </div>
+        );
+
+        const cellStyle: React.CSSProperties = {
+          borderLeft: i === 0 ? undefined : '1px solid var(--rule)',
+          paddingLeft: i === 0 ? 0 : '1.75rem',
+          paddingRight: '1.75rem',
+        };
+
+        return item.href ? (
+          <Link
+            key={item.label}
+            to={item.href}
+            className="block"
+            style={cellStyle}
+          >
+            {inner}
+          </Link>
+        ) : (
+          <div key={item.label} style={cellStyle}>
+            {inner}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function ActionRow({
+  to,
+  title,
+  desc,
+}: {
+  to: string;
+  title: string;
+  desc: string;
+}) {
+  return (
+    <Link
+      to={to}
+      className="flex items-center justify-between gap-4 py-4"
+      style={{ borderTop: '1px solid var(--rule)' }}
+    >
+      <div>
+        <p className="text-ink" style={{ fontSize: '15px', fontWeight: 500 }}>
+          {title}
+        </p>
+        <p className="mt-1 text-ink-muted" style={{ fontSize: '13px' }}>
+          {desc}
+        </p>
+      </div>
+      <span className="mono text-ink-muted" style={{ fontSize: '13px' }}>
+        &rarr;
+      </span>
+    </Link>
+  );
+}
+
 function CandidateDashboard() {
   const { user } = useAuth();
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Welcome, {user?.full_name}!</h1>
-        <p className="text-gray-600 dark:text-gray-300 mt-2">Ready to ace your next interview?</p>
-      </div>
+    <div className="max-w-6xl mx-auto px-6 lg:px-10 py-14">
+      <p className="eyebrow">Today's session</p>
+      <h1
+        className="heading-display mt-3"
+        style={{ fontSize: 'clamp(2rem, 4vw, 2.8rem)' }}
+      >
+        Welcome back,{' '}
+        <span className="serif-italic">{user?.full_name?.split(' ')[0] || 'there'}</span>.
+      </h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="card bg-gradient-to-br from-blue-500 to-blue-600 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-blue-100">Total Interviews</p>
-              <p className="text-3xl font-bold mt-1">0</p>
-            </div>
-            <History className="h-12 w-12 text-blue-200" />
-          </div>
-        </div>
+      <StatStrip
+        items={[
+          { label: 'Interviews taken', value: '0', sub: 'Across all roles' },
+          { label: 'Average score', value: '—', sub: 'Out of 100' },
+          { label: 'Skills tracked', value: '0', sub: 'Surfaced in feedback' },
+        ]}
+      />
 
-        <div className="card bg-gradient-to-br from-green-500 to-green-600 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-green-100">Average Score</p>
-              <p className="text-3xl font-bold mt-1">-</p>
-            </div>
-            <TrendingUp className="h-12 w-12 text-green-200" />
-          </div>
-        </div>
-
-        <div className="card bg-gradient-to-br from-purple-500 to-purple-600 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-purple-100">Skills Tracked</p>
-              <p className="text-3xl font-bold mt-1">0</p>
-            </div>
-            <FileText className="h-12 w-12 text-purple-200" />
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="card">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h2>
-          <div className="space-y-3">
-            <Link
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mt-6">
+        <section>
+          <p className="eyebrow">What next</p>
+          <h2 className="serif mt-3" style={{ fontSize: '22px' }}>
+            Pick up where you left off
+          </h2>
+          <div className="mt-6">
+            <ActionRow
               to="/interview/new"
-              className="flex items-center space-x-3 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
-            >
-              <Play className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-              <div>
-                <p className="font-medium text-gray-900 dark:text-white">Start New Interview</p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Practice with AI-powered questions</p>
-              </div>
-            </Link>
-
-            <Link
+              title="Begin a practice round"
+              desc="Choose a role and a company style. Or upload a JD."
+            />
+            <ActionRow
+              to="/openings"
+              title="Browse openings"
+              desc="See what recruiters are hiring for and apply."
+            />
+            <ActionRow
               to="/my-interviews"
-              className="flex items-center space-x-3 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            >
-              <History className="h-6 w-6 text-gray-600 dark:text-gray-400" />
-              <div>
-                <p className="font-medium text-gray-900 dark:text-white">View Past Interviews</p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Review your performance and feedback</p>
-              </div>
-            </Link>
-
-            <Link
-              to="/profile"
-              className="flex items-center space-x-3 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            >
-              <FileText className="h-6 w-6 text-gray-600 dark:text-gray-400" />
-              <div>
-                <p className="font-medium text-gray-900 dark:text-white">Update Profile</p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Upload resume and update skills</p>
-              </div>
-            </Link>
+              title="Past interviews"
+              desc="Review scores, transcripts and feedback."
+            />
+            <div style={{ borderTop: '1px solid var(--rule)' }} />
           </div>
-        </div>
+        </section>
 
-        <div className="card">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Available Roles</h2>
-          <div className="space-y-2">
-            {['Software Development Engineer', 'ML Engineer', 'Data Scientist', 'Frontend Developer', 'Backend Developer'].map((role) => (
+        <section>
+          <p className="eyebrow">Roles to practise</p>
+          <h2 className="serif mt-3" style={{ fontSize: '22px' }}>
+            Common destinations
+          </h2>
+          <div className="mt-6">
+            {[
+              'Software Development Engineer',
+              'ML Engineer',
+              'Data Scientist',
+              'Frontend Developer',
+              'Backend Developer',
+            ].map((role) => (
               <Link
                 key={role}
                 to={`/interview/new?role=${encodeURIComponent(role)}`}
-                className="block p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
+                className="flex items-center justify-between py-4"
+                style={{ borderTop: '1px solid var(--rule)' }}
               >
-                <p className="font-medium text-gray-900 dark:text-white">{role}</p>
+                <span className="text-ink" style={{ fontSize: '15px' }}>
+                  {role}
+                </span>
+                <span className="mono text-ink-faint" style={{ fontSize: '12px' }}>
+                  Practise &rarr;
+                </span>
               </Link>
             ))}
+            <div style={{ borderTop: '1px solid var(--rule)' }} />
           </div>
-        </div>
+        </section>
       </div>
     </div>
   );
@@ -114,93 +191,72 @@ function CandidateDashboard() {
 
 function RecruiterDashboard() {
   const { user } = useAuth();
+  const [activeJobs, setActiveJobs] = useState<number | null>(null);
+  const [candidates, setCandidates] = useState<RecruiterCandidate[] | null>(null);
+
+  useEffect(() => {
+    Promise.all([jobApi.myJobs(), recruiterApi.myCandidates()])
+      .then(([jobs, cands]) => {
+        setActiveJobs(jobs.filter((j) => j.status === 'open').length);
+        setCandidates(cands);
+      })
+      .catch(() => {
+        setActiveJobs(0);
+        setCandidates([]);
+      });
+  }, []);
+
+  const totalCandidates = candidates?.length ?? null;
+  const totalInterviews = candidates?.reduce((sum, c) => sum + c.interview_count, 0) ?? null;
+  const fmt = (n: number | null) => (n == null ? '—' : n.toString());
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Welcome, {user?.full_name}!</h1>
-        <p className="text-gray-600 dark:text-gray-300 mt-2">Manage your job postings and candidates</p>
-      </div>
+    <div className="max-w-6xl mx-auto px-6 lg:px-10 py-14">
+      <p className="eyebrow">Recruiter view</p>
+      <h1
+        className="heading-display mt-3"
+        style={{ fontSize: 'clamp(2rem, 4vw, 2.8rem)' }}
+      >
+        Hello,{' '}
+        <span className="serif-italic">{user?.full_name?.split(' ')[0] || 'there'}</span>.
+      </h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="card bg-gradient-to-br from-blue-500 to-blue-600 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-blue-100">Active Jobs</p>
-              <p className="text-3xl font-bold mt-1">0</p>
-            </div>
-            <Briefcase className="h-12 w-12 text-blue-200" />
+      <StatStrip
+        items={[
+          { label: 'Open postings', value: fmt(activeJobs), sub: 'Currently accepting applicants', href: '/jobs' },
+          { label: 'Candidates', value: fmt(totalCandidates), sub: 'Across all your postings', href: '/candidates' },
+          { label: 'Interviews completed', value: fmt(totalInterviews), sub: 'Submitted for review' },
+        ]}
+      />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mt-6">
+        <section>
+          <p className="eyebrow">What next</p>
+          <h2 className="serif mt-3" style={{ fontSize: '22px' }}>
+            Manage hiring
+          </h2>
+          <div className="mt-6">
+            <ActionRow to="/jobs/new" title="Post a new role" desc="Compose a JD and have AI propose the interview structure." />
+            <ActionRow to="/jobs" title="Manage postings" desc="Edit, close or reopen existing roles." />
+            <ActionRow to="/candidates" title="Review candidates" desc="Sort by score, drill into transcripts." />
+            <div style={{ borderTop: '1px solid var(--rule)' }} />
           </div>
-        </div>
+        </section>
 
-        <div className="card bg-gradient-to-br from-green-500 to-green-600 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-green-100">Total Candidates</p>
-              <p className="text-3xl font-bold mt-1">0</p>
-            </div>
-            <Users className="h-12 w-12 text-green-200" />
+        <section>
+          <p className="eyebrow">Recent activity</p>
+          <h2 className="serif mt-3" style={{ fontSize: '22px' }}>
+            Latest signals
+          </h2>
+          <div className="mt-6 py-12 text-center text-ink-muted" style={{ borderTop: '1px solid var(--rule)', borderBottom: '1px solid var(--rule)' }}>
+            <p className="serif-italic" style={{ fontSize: '17px', color: 'var(--ink)' }}>
+              Nothing here yet.
+            </p>
+            <p className="mt-2" style={{ fontSize: '13px' }}>
+              Once candidates begin interviewing, their submissions will appear here.
+            </p>
           </div>
-        </div>
-
-        <div className="card bg-gradient-to-br from-purple-500 to-purple-600 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-purple-100">Interviews Completed</p>
-              <p className="text-3xl font-bold mt-1">0</p>
-            </div>
-            <History className="h-12 w-12 text-purple-200" />
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="card">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h2>
-          <div className="space-y-3">
-            <Link
-              to="/jobs/new"
-              className="flex items-center space-x-3 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
-            >
-              <Briefcase className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-              <div>
-                <p className="font-medium text-gray-900 dark:text-white">Post New Job</p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Create a new job listing</p>
-              </div>
-            </Link>
-
-            <Link
-              to="/jobs"
-              className="flex items-center space-x-3 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            >
-              <FileText className="h-6 w-6 text-gray-600 dark:text-gray-400" />
-              <div>
-                <p className="font-medium text-gray-900 dark:text-white">Manage Jobs</p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">View and edit your job postings</p>
-              </div>
-            </Link>
-
-            <Link
-              to="/candidates"
-              className="flex items-center space-x-3 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            >
-              <Users className="h-6 w-6 text-gray-600 dark:text-gray-400" />
-              <div>
-                <p className="font-medium text-gray-900 dark:text-white">View Candidates</p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Review and rank applicants</p>
-              </div>
-            </Link>
-          </div>
-        </div>
-
-        <div className="card">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Recent Activity</h2>
-          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-            <History className="h-12 w-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
-            <p>No recent activity</p>
-            <p className="text-sm">Post a job to get started</p>
-          </div>
-        </div>
+        </section>
       </div>
     </div>
   );

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Mail, Lock, AlertCircle } from 'lucide-react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -20,7 +19,8 @@ export default function Login() {
       await login(email, password);
       navigate('/dashboard');
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Login failed. Please check your credentials.';
+      const errorMessage =
+        err instanceof Error ? err.message : 'Login failed. Please check your credentials.';
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -28,70 +28,85 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Welcome back</h2>
-          <p className="mt-2 text-gray-600 dark:text-gray-300">Sign in to your account</p>
-        </div>
+    <div className="min-h-[calc(100vh-4rem)] flex items-start justify-center pt-20 pb-16 px-6">
+      <div className="w-full max-w-md fade-rise">
+        <p className="eyebrow">Member access</p>
+        <h1
+          className="heading-display-italic mt-3"
+          style={{ fontSize: 'clamp(2.4rem, 4.6vw, 3.2rem)' }}
+        >
+          Sign in.
+        </h1>
+        <p className="mt-3 text-ink-muted" style={{ fontSize: '15px' }}>
+          Pick up where you left off.
+        </p>
 
-        <form className="mt-8 space-y-6 card" onSubmit={handleSubmit}>
-          {error && (
-            <div className="flex items-center space-x-2 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 p-3 rounded-lg">
-              <AlertCircle className="h-5 w-5" />
-              <span className="text-sm">{error}</span>
-            </div>
-          )}
+        <hr className="rule" style={{ margin: '2rem 0 1.5rem' }} />
 
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Email address
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input
-                  id="email"
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="input-field pl-10"
-                  placeholder="you@example.com"
-                />
-              </div>
-            </div>
+        {error && (
+          <p
+            className="mb-6"
+            style={{
+              color: 'var(--accent)',
+              fontSize: '13px',
+              borderLeft: '2px solid var(--accent)',
+              paddingLeft: '0.75rem',
+            }}
+          >
+            {error}
+          </p>
+        )}
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input
-                  id="password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="input-field pl-10"
-                  placeholder="••••••••"
-                />
-              </div>
-            </div>
+        <form onSubmit={handleSubmit} className="space-y-7">
+          <div>
+            <label htmlFor="email" className="eyebrow block mb-2">
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="input-field"
+              placeholder="you@example.com"
+              autoComplete="email"
+            />
           </div>
 
-          <button type="submit" disabled={loading} className="btn-primary w-full">
-            {loading ? 'Signing in...' : 'Sign in'}
-          </button>
+          <div>
+            <label htmlFor="password" className="eyebrow block mb-2">
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="input-field"
+              placeholder="••••••••"
+              autoComplete="current-password"
+            />
+          </div>
 
-          <p className="text-center text-sm text-gray-600 dark:text-gray-400">
-            Don't have an account?{' '}
-            <Link to="/register" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium">
-              Sign up
-            </Link>
-          </p>
+          <button type="submit" disabled={loading} className="btn-primary w-full" style={{ marginTop: '0.5rem' }}>
+            {loading ? 'Signing in…' : 'Sign in'}
+          </button>
         </form>
+
+        <hr className="rule" style={{ margin: '2.5rem 0 1.25rem' }} />
+
+        <p className="text-ink-muted" style={{ fontSize: '14px' }}>
+          New here?{' '}
+          <Link
+            to="/register"
+            className="text-accent"
+            style={{ borderBottom: '1px solid var(--accent)' }}
+          >
+            Create an account
+          </Link>
+        </p>
       </div>
     </div>
   );

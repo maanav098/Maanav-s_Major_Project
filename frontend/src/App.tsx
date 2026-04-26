@@ -10,6 +10,13 @@ import NewInterview from './pages/NewInterview';
 import Interview from './pages/Interview';
 import InterviewResult from './pages/InterviewResult';
 import MyInterviews from './pages/MyInterviews';
+import Jobs from './pages/Jobs';
+import JobForm from './pages/JobForm';
+import JobDetail from './pages/JobDetail';
+import Candidates from './pages/Candidates';
+import Openings from './pages/Openings';
+import OpeningDetail from './pages/OpeningDetail';
+import RecruiterRoute from './components/RecruiterRoute';
 import './index.css';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -17,8 +24,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen flex items-center justify-center surface">
+        <div className="spinner" />
       </div>
     );
   }
@@ -35,8 +42,8 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen flex items-center justify-center surface">
+        <div className="spinner" />
       </div>
     );
   }
@@ -50,7 +57,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 
 function AppRoutes() {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+    <div className="min-h-screen surface">
       <Navbar />
       <Routes>
         <Route path="/" element={<Home />} />
@@ -108,6 +115,62 @@ function AppRoutes() {
             <ProtectedRoute>
               <MyInterviews />
             </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/openings"
+          element={
+            <ProtectedRoute>
+              <Openings />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/openings/:id"
+          element={
+            <ProtectedRoute>
+              <OpeningDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/jobs"
+          element={
+            <RecruiterRoute>
+              <Jobs />
+            </RecruiterRoute>
+          }
+        />
+        <Route
+          path="/jobs/new"
+          element={
+            <RecruiterRoute>
+              <JobForm />
+            </RecruiterRoute>
+          }
+        />
+        <Route
+          path="/jobs/:id"
+          element={
+            <RecruiterRoute>
+              <JobDetail />
+            </RecruiterRoute>
+          }
+        />
+        <Route
+          path="/jobs/:id/edit"
+          element={
+            <RecruiterRoute>
+              <JobForm />
+            </RecruiterRoute>
+          }
+        />
+        <Route
+          path="/candidates"
+          element={
+            <RecruiterRoute>
+              <Candidates />
+            </RecruiterRoute>
           }
         />
       </Routes>

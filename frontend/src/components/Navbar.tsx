@@ -1,63 +1,62 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { LogOut, User, Briefcase, Moon, Sun } from 'lucide-react';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
+  const linkClass = (path: string) => {
+    const active = location.pathname === path || location.pathname.startsWith(path + '/');
+    return active ? 'nav-link nav-link-active' : 'nav-link';
+  };
+
   return (
-    <nav className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 transition-colors">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex items-center">
-            <Link to="/" className="flex items-center space-x-2">
-              <Briefcase className="h-8 w-8 text-blue-600 dark:text-blue-400" />
-              <span className="text-xl font-bold text-gray-900 dark:text-white">InterviewAI</span>
+    <nav
+      className="surface"
+      style={{ borderBottom: '1px solid var(--rule)' }}
+    >
+      <div className="max-w-6xl mx-auto px-6 lg:px-10">
+        <div className="flex items-center justify-between h-16">
+          <div className="flex items-center gap-10">
+            <Link
+              to="/"
+              className="serif-italic text-ink"
+              style={{ fontSize: '22px', letterSpacing: '-0.01em' }}
+            >
+              Interview&thinsp;<span style={{ color: 'var(--accent)' }}>&amp;</span>&thinsp;Co.
             </Link>
             {user && (
-              <div className="hidden md:flex ml-10 space-x-4">
-                <Link
-                  to="/dashboard"
-                  className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium"
-                >
+              <div className="hidden md:flex items-center gap-7">
+                <Link to="/dashboard" className={linkClass('/dashboard')}>
                   Dashboard
                 </Link>
                 {user.role === 'candidate' && (
                   <>
-                    <Link
-                      to="/interview/new"
-                      className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium"
-                    >
-                      Start Interview
+                    <Link to="/openings" className={linkClass('/openings')}>
+                      Openings
                     </Link>
-                    <Link
-                      to="/my-interviews"
-                      className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium"
-                    >
-                      My Interviews
+                    <Link to="/interview/new" className={linkClass('/interview/new')}>
+                      Practice
+                    </Link>
+                    <Link to="/my-interviews" className={linkClass('/my-interviews')}>
+                      Interviews
                     </Link>
                   </>
                 )}
                 {user.role === 'recruiter' && (
                   <>
-                    <Link
-                      to="/jobs"
-                      className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium"
-                    >
-                      My Jobs
+                    <Link to="/jobs" className={linkClass('/jobs')}>
+                      Postings
                     </Link>
-                    <Link
-                      to="/candidates"
-                      className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium"
-                    >
+                    <Link to="/candidates" className={linkClass('/candidates')}>
                       Candidates
                     </Link>
                   </>
@@ -65,36 +64,37 @@ export default function Navbar() {
               </div>
             )}
           </div>
-          <div className="flex items-center space-x-4">
+
+          <div className="flex items-center gap-7">
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
               aria-label="Toggle theme"
+              className="eyebrow"
+              style={{ background: 'transparent', border: 0, cursor: 'pointer' }}
             >
-              {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+              {theme === 'light' ? 'Dark' : 'Light'}
             </button>
             {user ? (
               <>
-                <div className="flex items-center space-x-2 text-gray-700 dark:text-gray-300">
-                  <User className="h-5 w-5" />
-                  <span className="text-sm font-medium">{user.full_name}</span>
-                  <span className="badge badge-info">{user.role}</span>
+                <div className="hidden sm:flex flex-col items-end leading-tight">
+                  <span className="text-ink" style={{ fontSize: '14px' }}>
+                    {user.full_name}
+                  </span>
+                  <span className="eyebrow" style={{ fontSize: '10px', letterSpacing: '0.16em' }}>
+                    {user.role}
+                  </span>
                 </div>
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center space-x-1 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
-                >
-                  <LogOut className="h-5 w-5" />
-                  <span className="text-sm">Logout</span>
+                <button onClick={handleLogout} className="btn-text">
+                  Sign out
                 </button>
               </>
             ) : (
-              <div className="flex items-center space-x-4">
-                <Link to="/login" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white text-sm font-medium">
-                  Login
+              <div className="flex items-center gap-6">
+                <Link to="/login" className="nav-link">
+                  Sign in
                 </Link>
-                <Link to="/register" className="btn-primary text-sm">
-                  Sign Up
+                <Link to="/register" className="btn-primary">
+                  Get started
                 </Link>
               </div>
             )}

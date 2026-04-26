@@ -2,57 +2,564 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-body {
-  @apply bg-gray-50 text-gray-900 antialiased;
-  @apply dark:bg-gray-900 dark:text-gray-100;
-  margin: 0;
-  transition: background-color 0.3s, color 0.3s;
+:root {
+  --surface: #f5f2ea;
+  --surface-2: #ece7dc;
+  --surface-sunk: #efeae0;
+  --ink: #1a1715;
+  --ink-soft: #2c2824;
+  --ink-muted: #6b6357;
+  --ink-faint: #9a9285;
+  --rule: #d6cfc0;
+  --rule-strong: #b9b0a0;
+  --accent: #7b2d24;
+  --accent-soft: #f0e6dd;
+
+  --serif: 'Fraunces', 'Iowan Old Style', Georgia, serif;
+  --sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace;
 }
 
+.dark {
+  --surface: #16181a;
+  --surface-2: #1d2024;
+  --surface-sunk: #1a1c1f;
+  --ink: #e7e0d2;
+  --ink-soft: #d4ccbd;
+  --ink-muted: #8c867a;
+  --ink-faint: #5e594f;
+  --rule: #2c2e32;
+  --rule-strong: #3d4045;
+  --accent: #c4836f;
+  --accent-soft: #2a201d;
+}
+
+html {
+  background: var(--surface);
+}
+
+body {
+  font-family: var(--sans);
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 1.55;
+  background: var(--surface);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'kern', 'liga', 'calt';
+  margin: 0;
+  transition: background-color 0.4s ease, color 0.4s ease;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--surface);
+}
+
+/* ---------- Typographic helpers ---------- */
+
+.heading-display {
+  font-family: var(--serif);
+  font-weight: 400;
+  line-height: 1.04;
+  letter-spacing: -0.022em;
+  font-feature-settings: 'ss01', 'ss02';
+  color: var(--ink);
+}
+
+.heading-display-italic {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 400;
+  line-height: 1.04;
+  letter-spacing: -0.018em;
+  font-feature-settings: 'ss01';
+  color: var(--ink);
+}
+
+.serif {
+  font-family: var(--serif);
+}
+
+.serif-italic {
+  font-family: var(--serif);
+  font-style: italic;
+}
+
+.eyebrow {
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.mono {
+  font-family: var(--mono);
+}
+
+.numeric {
+  font-family: var(--serif);
+  font-feature-settings: 'tnum', 'lnum';
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+/* ---------- Rules & dividers ---------- */
+
+.rule {
+  border: 0;
+  border-top: 1px solid var(--rule);
+  margin: 0;
+}
+
+.rule-strong {
+  border: 0;
+  border-top: 1px solid var(--rule-strong);
+  margin: 0;
+}
+
+.rule-accent {
+  border: 0;
+  border-top: 1px solid var(--accent);
+  margin: 0;
+}
+
+/* ---------- Buttons ---------- */
+
 .btn-primary {
-  @apply bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: 0.005em;
+  background: var(--ink);
+  color: var(--surface);
+  padding: 0.625rem 1.25rem;
+  border-radius: 2px;
+  border: 1px solid var(--ink);
+  transition: background-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
+  cursor: pointer;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--ink-soft);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btn-primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .btn-secondary {
-  @apply bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors font-medium;
-  @apply dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: 14px;
+  background: transparent;
+  color: var(--ink);
+  padding: 0.625rem 1.25rem;
+  border-radius: 2px;
+  border: 1px solid var(--rule-strong);
+  transition: border-color 0.18s ease, background-color 0.18s ease;
+  cursor: pointer;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  border-color: var(--ink);
+  background: var(--surface-2);
+}
+
+.btn-secondary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .btn-outline {
-  @apply border-2 border-blue-600 text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors font-medium;
-  @apply dark:border-blue-400 dark:text-blue-400 dark:hover:bg-blue-900/30;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: 14px;
+  background: transparent;
+  color: var(--ink);
+  padding: 0.625rem 1.25rem;
+  border-radius: 2px;
+  border: 1px solid var(--ink);
+  transition: background-color 0.18s ease, color 0.18s ease;
+  cursor: pointer;
 }
+
+.btn-outline:hover:not(:disabled) {
+  background: var(--ink);
+  color: var(--surface);
+}
+
+.btn-text {
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  padding: 0.4rem 0;
+  position: relative;
+  cursor: pointer;
+  transition: color 0.18s ease;
+}
+
+.btn-text::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0.15rem;
+  height: 1px;
+  background: var(--ink);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.22s ease;
+}
+
+.btn-text:hover::after {
+  transform: scaleX(1);
+}
+
+.btn-accent {
+  color: var(--accent);
+}
+
+/* ---------- Inputs ---------- */
 
 .input-field {
-  @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all;
-  @apply dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-400;
+  width: 100%;
+  font-family: var(--sans);
+  font-size: 15px;
+  font-weight: 400;
+  background: transparent;
+  color: var(--ink);
+  padding: 0.55rem 0;
+  border: 0;
+  border-bottom: 1px solid var(--rule-strong);
+  border-radius: 0;
+  outline: none;
+  transition: border-color 0.18s ease;
 }
+
+.input-field::placeholder {
+  color: var(--ink-faint);
+}
+
+.input-field:focus {
+  border-bottom-color: var(--ink);
+}
+
+.input-field-boxed {
+  width: 100%;
+  font-family: var(--sans);
+  font-size: 15px;
+  font-weight: 400;
+  background: var(--surface);
+  color: var(--ink);
+  padding: 0.6rem 0.85rem;
+  border: 1px solid var(--rule-strong);
+  border-radius: 2px;
+  outline: none;
+  transition: border-color 0.18s ease;
+}
+
+.input-field-boxed::placeholder {
+  color: var(--ink-faint);
+}
+
+.input-field-boxed:focus {
+  border-color: var(--ink);
+}
+
+textarea.input-field-boxed {
+  line-height: 1.55;
+}
+
+/* ---------- Cards ---------- */
 
 .card {
-  @apply bg-white rounded-xl shadow-md p-6;
-  @apply dark:bg-gray-800 dark:shadow-gray-900/50;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 1.75rem;
+  transition: border-color 0.2s ease;
 }
 
+.card-quiet {
+  background: var(--surface-2);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 1.75rem;
+}
+
+.card-bordered {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 1.5rem;
+  transition: border-color 0.22s ease;
+}
+
+.card-bordered:hover {
+  border-color: var(--rule-strong);
+}
+
+.card-link {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 1.5rem;
+  display: block;
+  transition: border-color 0.22s ease, transform 0.22s ease;
+}
+
+.card-link:hover {
+  border-color: var(--ink);
+}
+
+/* ---------- Badges ---------- */
+
 .badge {
-  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.55rem;
+  border: 1px solid var(--rule-strong);
+  border-radius: 2px;
+  color: var(--ink-muted);
+  background: transparent;
+  line-height: 1.4;
 }
 
 .badge-success {
-  @apply bg-green-100 text-green-800;
-  @apply dark:bg-green-900/50 dark:text-green-300;
+  color: #5a6b4f;
+  border-color: #b6bda5;
+}
+
+.dark .badge-success {
+  color: #9eb087;
+  border-color: #4d5a3f;
 }
 
 .badge-warning {
-  @apply bg-yellow-100 text-yellow-800;
-  @apply dark:bg-yellow-900/50 dark:text-yellow-300;
+  color: #8a6324;
+  border-color: #d8c391;
+}
+
+.dark .badge-warning {
+  color: #d6b06b;
+  border-color: #5e4a25;
 }
 
 .badge-error {
-  @apply bg-red-100 text-red-800;
-  @apply dark:bg-red-900/50 dark:text-red-300;
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 .badge-info {
-  @apply bg-blue-100 text-blue-800;
-  @apply dark:bg-blue-900/50 dark:text-blue-300;
+  color: var(--ink);
+  border-color: var(--rule-strong);
+}
+
+.badge-solid {
+  background: var(--ink);
+  color: var(--surface);
+  border-color: var(--ink);
+}
+
+.badge-accent {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* ---------- Selectable pill (used for role/category/company toggles) ---------- */
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--sans);
+  font-weight: 400;
+  font-size: 14px;
+  color: var(--ink);
+  background: transparent;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background-color 0.18s ease, color 0.18s ease;
+  text-align: left;
+}
+
+.pill:hover {
+  border-color: var(--rule-strong);
+}
+
+.pill-active {
+  background: var(--ink);
+  color: var(--surface);
+  border-color: var(--ink);
+}
+
+.pill-active:hover {
+  border-color: var(--ink);
+}
+
+/* ---------- Nav link helpers ---------- */
+
+.nav-link {
+  position: relative;
+  font-family: var(--sans);
+  font-weight: 400;
+  font-size: 14px;
+  color: var(--ink-muted);
+  text-decoration: none;
+  padding: 0.4rem 0;
+  transition: color 0.18s ease;
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--ink);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.24s ease;
+}
+
+.nav-link:hover {
+  color: var(--ink);
+}
+
+.nav-link:hover::after {
+  transform: scaleX(1);
+}
+
+.nav-link-active {
+  color: var(--ink);
+}
+
+.nav-link-active::after {
+  transform: scaleX(1);
+}
+
+/* ---------- Surface helpers ---------- */
+
+.surface {
+  background: var(--surface);
+}
+
+.surface-2 {
+  background: var(--surface-2);
+}
+
+.surface-sunk {
+  background: var(--surface-sunk);
+}
+
+/* ---------- Text helpers ---------- */
+
+.text-ink {
+  color: var(--ink);
+}
+
+.text-ink-muted {
+  color: var(--ink-muted);
+}
+
+.text-ink-faint {
+  color: var(--ink-faint);
+}
+
+.text-accent {
+  color: var(--accent);
+}
+
+.border-rule {
+  border-color: var(--rule);
+}
+
+.border-rule-strong {
+  border-color: var(--rule-strong);
+}
+
+.border-ink {
+  border-color: var(--ink);
+}
+
+/* ---------- Subtle motion ---------- */
+
+@keyframes fadeRise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-rise {
+  animation: fadeRise 0.7s cubic-bezier(0.2, 0.6, 0.2, 1) both;
+}
+
+.fade-rise-1 { animation-delay: 0.04s; }
+.fade-rise-2 { animation-delay: 0.12s; }
+.fade-rise-3 { animation-delay: 0.22s; }
+.fade-rise-4 { animation-delay: 0.34s; }
+.fade-rise-5 { animation-delay: 0.46s; }
+
+/* ---------- Focus ring ---------- */
+
+:focus-visible {
+  outline: 1px solid var(--ink);
+  outline-offset: 3px;
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 1px solid var(--ink);
+  outline-offset: 3px;
+}
+
+/* Spinner */
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--rule);
+  border-top-color: var(--ink);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }

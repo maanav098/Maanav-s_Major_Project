@@ -28,6 +28,9 @@ class Job(Base):
     location = Column(String)
     salary_range = Column(String)
     status = Column(Enum(JobStatus), default=JobStatus.OPEN)
+    num_questions = Column(Integer, default=10)
+    question_categories = Column(JSON, default=list)
+    custom_questions = Column(JSON, default=list)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

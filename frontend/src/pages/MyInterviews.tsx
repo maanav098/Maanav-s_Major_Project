@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { interviewApi } from '../services/api';
 import type { Interview } from '../types';
-import { Calendar, Clock, TrendingUp, ChevronRight, Loader2, FileText } from 'lucide-react';
 
 export default function MyInterviews() {
   const [interviews, setInterviews] = useState<Interview[]>([]);
@@ -30,7 +29,7 @@ export default function MyInterviews() {
       case 'completed':
         return <span className="badge badge-info">Evaluating</span>;
       case 'in_progress':
-        return <span className="badge badge-warning">In Progress</span>;
+        return <span className="badge badge-warning">In progress</span>;
       default:
         return <span className="badge">Pending</span>;
     }
@@ -38,87 +37,109 @@ export default function MyInterviews() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="spinner" />
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex items-center justify-between mb-8">
+    <div className="max-w-5xl mx-auto px-6 lg:px-10 py-14">
+      <div className="flex items-end justify-between flex-wrap gap-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">My Interviews</h1>
-          <p className="text-gray-600 dark:text-gray-300 mt-1">Track your interview practice history</p>
+          <p className="eyebrow">Your record</p>
+          <h1
+            className="heading-display mt-3"
+            style={{ fontSize: 'clamp(2rem, 4vw, 2.8rem)' }}
+          >
+            Past&nbsp;<span className="serif-italic">interviews</span>.
+          </h1>
         </div>
         <Link to="/interview/new" className="btn-primary">
-          Start New Interview
+          Begin a new round
         </Link>
       </div>
 
-      {interviews.length === 0 ? (
-        <div className="card text-center py-12">
-          <FileText className="h-16 w-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No interviews yet</h2>
-          <p className="text-gray-600 dark:text-gray-300 mb-6">Start practicing to see your history here</p>
-          <Link to="/interview/new" className="btn-primary inline-block">
-            Start Your First Interview
-          </Link>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {interviews.map((interview) => (
+      <div className="mt-12" style={{ borderTop: '1px solid var(--rule)' }}>
+        {interviews.length === 0 ? (
+          <div className="py-20 text-center">
+            <p className="serif-italic text-ink" style={{ fontSize: '20px' }}>
+              No interviews yet.
+            </p>
+            <p className="mt-2 text-ink-muted" style={{ fontSize: '14px' }}>
+              Begin a practice round to see your history here.
+            </p>
+          </div>
+        ) : (
+          interviews.map((interview, idx) => (
             <Link
               key={interview.id}
-              to={interview.status === 'evaluated'
-                ? `/interview/${interview.id}/result`
-                : `/interview/${interview.id}`}
-              className="card block hover:shadow-lg transition-shadow"
+              to={
+                interview.status === 'evaluated'
+                  ? `/interview/${interview.id}/result`
+                  : `/interview/${interview.id}`
+              }
+              className="block py-6 group"
+              style={{ borderBottom: '1px solid var(--rule)' }}
             >
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-3 mb-2">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              <div className="flex items-start justify-between gap-6">
+                <div className="flex-1 min-w-0">
+                  <p
+                    className="mono text-ink-faint"
+                    style={{ fontSize: '11px', letterSpacing: '0.06em' }}
+                  >
+                    No. {String(idx + 1).padStart(2, '0')} ·{' '}
+                    {new Date(interview.created_at).toLocaleDateString(undefined, {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                    })}
+                  </p>
+                  <div className="mt-2 flex items-center flex-wrap gap-3">
+                    <h3 className="serif text-ink" style={{ fontSize: '20px' }}>
                       {interview.role}
+                      {interview.company && (
+                        <span className="text-ink-muted serif-italic">
+                          {' '}
+                          · {interview.company}
+                        </span>
+                      )}
                     </h3>
-                    {interview.company && (
-                      <span className="text-gray-500 dark:text-gray-400">• {interview.company}</span>
-                    )}
                     {getStatusBadge(interview.status)}
                   </div>
-
-                  <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
-                    <span className="flex items-center">
-                      <Calendar className="h-4 w-4 mr-1" />
-                      {new Date(interview.created_at).toLocaleDateString()}
-                    </span>
-                    {interview.started_at && (
-                      <span className="flex items-center">
-                        <Clock className="h-4 w-4 mr-1" />
-                        {new Date(interview.started_at).toLocaleTimeString()}
-                      </span>
-                    )}
-                    <span>{interview.questions_asked?.length || 0} questions</span>
-                  </div>
+                  <p className="mt-2 text-ink-muted" style={{ fontSize: '13px' }}>
+                    {interview.questions_asked?.length || 0} questions
+                  </p>
                 </div>
-
-                <div className="flex items-center space-x-4">
-                  {interview.overall_score && (
+                <div className="flex items-center gap-8 flex-shrink-0">
+                  {interview.overall_score != null && (
                     <div className="text-right">
-                      <div className="flex items-center text-green-600 dark:text-green-400">
-                        <TrendingUp className="h-5 w-5 mr-1" />
-                        <span className="text-2xl font-bold">{interview.overall_score}</span>
-                      </div>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">Overall Score</span>
+                      <p
+                        className="numeric text-ink"
+                        style={{ fontSize: '32px', lineHeight: 1 }}
+                      >
+                        {interview.overall_score}
+                      </p>
+                      <p
+                        className="mono text-ink-faint mt-1"
+                        style={{ fontSize: '10px', letterSpacing: '0.12em' }}
+                      >
+                        OVERALL
+                      </p>
                     </div>
                   )}
-                  <ChevronRight className="h-5 w-5 text-gray-400 dark:text-gray-600" />
+                  <span
+                    className="mono text-ink-muted group-hover:text-ink transition-colors"
+                    style={{ fontSize: '13px' }}
+                  >
+                    &rarr;
+                  </span>
                 </div>
               </div>
             </Link>
-          ))}
-        </div>
-      )}
+          ))
+        )}
+      </div>
     </div>
   );
 }

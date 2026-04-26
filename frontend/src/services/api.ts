@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { AuthResponse, User, Candidate, Job, Interview, Question, EvaluationResult } from '../types';
+import type { AuthResponse, Candidate, Job, Interview, Question, EvaluationResult, JobInterviewSummary, RecruiterCandidate, JdAnalysis } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
@@ -84,6 +84,21 @@ export const jobApi = {
     const response = await api.get('/jobs/my-jobs');
     return response.data;
   },
+  listInterviews: async (jobId: number): Promise<JobInterviewSummary[]> => {
+    const response = await api.get(`/jobs/${jobId}/interviews`);
+    return response.data;
+  },
+  analyzeJd: async (data: { description: string; role?: string; company?: string }): Promise<JdAnalysis> => {
+    const response = await api.post('/jobs/analyze-jd', data);
+    return response.data;
+  },
+};
+
+export const recruiterApi = {
+  myCandidates: async (): Promise<RecruiterCandidate[]> => {
+    const response = await api.get('/recruiters/me/candidates');
+    return response.data;
+  },
 };
 
 export const interviewApi = {
@@ -105,6 +120,15 @@ export const interviewApi = {
     const response = await api.post('/interviews/transcribe', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
+    return response.data;
+  },
+  runCode: async (data: {
+    language: string;
+    version: string;
+    source: string;
+    stdin?: string;
+  }): Promise<{ stdout: string; stderr: string; exitCode: number | null; error?: string }> => {
+    const response = await api.post('/interviews/run-code', data);
     return response.data;
   },
   complete: async (interviewId: number): Promise<Interview> => {

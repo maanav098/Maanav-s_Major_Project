@@ -100,10 +100,11 @@ export default function VoiceRecorder({ onTranscript, disabled }: VoiceRecorderP
           type="button"
           onClick={startRecording}
           disabled={disabled}
-          className="flex items-center space-x-2 px-4 py-2 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed border border-red-200 dark:border-red-800"
+          className="btn-text inline-flex items-center gap-2 text-accent disabled:opacity-40"
+          style={{ fontSize: '13px' }}
         >
-          <Mic className="h-5 w-5" />
-          <span className="text-sm font-medium">Record answer</span>
+          <Mic className="h-3.5 w-3.5" />
+          <span>Record answer</span>
         </button>
       )}
 
@@ -111,23 +112,24 @@ export default function VoiceRecorder({ onTranscript, disabled }: VoiceRecorderP
         <button
           type="button"
           onClick={stopRecording}
-          className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors animate-pulse"
+          className="btn-primary animate-pulse"
+          style={{ background: 'var(--accent)', borderColor: 'var(--accent)' }}
         >
-          <Square className="h-5 w-5 fill-current" />
-          <span className="text-sm font-medium">Stop ({formatElapsed(elapsed)})</span>
+          <Square className="h-3.5 w-3.5 fill-current" />
+          <span>Stop ({formatElapsed(elapsed)})</span>
         </button>
       )}
 
       {state === 'processing' && (
-        <div className="flex items-center space-x-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg border border-blue-200 dark:border-blue-800">
-          <Loader2 className="h-5 w-5 animate-spin" />
-          <span className="text-sm font-medium">Transcribing...</span>
+        <div className="flex items-center gap-2 text-ink-muted" style={{ fontSize: '13px' }}>
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span>Transcribing…</span>
         </div>
       )}
 
       {error && (
-        <span className="flex items-center text-xs text-red-600 dark:text-red-400">
-          <AlertCircle className="h-4 w-4 mr-1" />
+        <span className="flex items-center text-accent gap-1" style={{ fontSize: '12px' }}>
+          <AlertCircle className="h-3.5 w-3.5" />
           {error}
         </span>
       )}

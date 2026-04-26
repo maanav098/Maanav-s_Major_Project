@@ -2,8 +2,9 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { interviewApi } from '../services/api';
 import type { Interview as InterviewType } from '../types';
-import { Send, Clock, CheckCircle, AlertCircle, ChevronRight, Loader2, Timer, AlertTriangle, Sparkles } from 'lucide-react';
+import { CheckCircle, ChevronRight, Loader2, Timer, AlertTriangle } from 'lucide-react';
 import VoiceRecorder from '../components/VoiceRecorder';
+import CodeEditor, { LANGUAGES } from '../components/CodeEditor';
 
 export default function Interview() {
   const { id } = useParams<{ id: string }>();
@@ -11,6 +12,8 @@ export default function Interview() {
   const [interview, setInterview] = useState<InterviewType | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answer, setAnswer] = useState('');
+  const [code, setCode] = useState('');
+  const [codeLanguage, setCodeLanguage] = useState('python');
   const [followUpAnswer, setFollowUpAnswer] = useState('');
   const [submittingFollowUp, setSubmittingFollowUp] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -30,9 +33,9 @@ export default function Interview() {
   }, []);
 
   const getTimerColor = useCallback((seconds: number): string => {
-    if (seconds <= 30) return 'text-red-600 dark:text-red-400';
-    if (seconds <= 60) return 'text-orange-500 dark:text-orange-400';
-    return 'text-gray-600 dark:text-gray-400';
+    if (seconds <= 30) return 'text-accent';
+    if (seconds <= 60) return 'text-ink';
+    return 'text-ink-muted';
   }, []);
 
   useEffect(() => {
@@ -48,6 +51,13 @@ export default function Interview() {
     const timeLimitMinutes = currentQuestion?.time_limit_minutes || DEFAULT_TIME_MINUTES;
     setTimeRemaining(timeLimitMinutes * 60);
     setTimerExpired(false);
+
+    if (currentQuestion?.type === 'coding') {
+      const lang = LANGUAGES.find(l => l.id === codeLanguage) || LANGUAGES[0];
+      setCode(lang.starter);
+    } else {
+      setCode('');
+    }
 
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -84,19 +94,30 @@ export default function Interview() {
   };
 
   const handleSubmitAnswer = async () => {
-    if (!answer.trim() || !interview) return;
+    if (!interview) return;
+    const currentQuestion = interview.questions_asked[currentQuestionIndex];
+    const isCoding = currentQuestion?.type === 'coding';
+
+    const submission = isCoding
+      ? (() => {
+          const lang = LANGUAGES.find(l => l.id === codeLanguage) || LANGUAGES[0];
+          return code.trim() ? `[Language: ${lang.label}]\n\n${code}` : '';
+        })()
+      : answer.trim();
+
+    if (!submission) return;
 
     setSubmitting(true);
     setError('');
 
     try {
-      const currentQuestion = interview.questions_asked[currentQuestionIndex];
       const updated = await interviewApi.submitAnswer(interview.id, {
         question_id: currentQuestion.id,
-        answer: answer.trim(),
+        answer: submission,
       });
       setInterview(updated);
       setAnswer('');
+      setCode('');
 
       const latestResp = updated.responses[updated.responses.length - 1];
       if (latestResp?.follow_up_question && !latestResp.follow_up_answer) {
@@ -155,17 +176,18 @@ export default function Interview() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="spinner" />
       </div>
     );
   }
 
   if (!interview) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-8 text-center">
-        <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Interview not found</h2>
+      <div className="max-w-3xl mx-auto px-6 py-20 text-center">
+        <p className="serif-italic text-ink" style={{ fontSize: '22px' }}>
+          Interview not found.
+        </p>
       </div>
     );
   }
@@ -180,63 +202,75 @@ export default function Interview() {
   );
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-2">
-          <div>
-            <span className="text-sm text-gray-500">
-              {interview.role} {interview.company && `• ${interview.company}`}
-            </span>
-          </div>
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Question {Math.min(currentQuestionIndex + 1, questions.length)} of {questions.length}
-          </span>
+    <div className="max-w-4xl mx-auto px-6 lg:px-10 py-10">
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-3">
+          <p className="eyebrow">
+            {interview.role}{interview.company ? ` · ${interview.company}` : ''}
+          </p>
+          <p className="mono text-ink-muted" style={{ fontSize: '12px' }}>
+            {String(Math.min(currentQuestionIndex + 1, questions.length)).padStart(2, '0')} / {String(questions.length).padStart(2, '0')}
+          </p>
         </div>
-        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+        <div style={{ height: '1px', width: '100%', background: 'var(--rule)', position: 'relative' }}>
           <div
-            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-            style={{ width: `${progress}%` }}
+            style={{
+              position: 'absolute',
+              left: 0,
+              top: 0,
+              height: '1px',
+              background: 'var(--ink)',
+              width: `${progress}%`,
+              transition: 'width 0.4s ease',
+            }}
           />
         </div>
       </div>
 
       {error && (
-        <div className="flex items-center space-x-2 text-red-600 bg-red-50 dark:bg-red-900/30 p-3 rounded-lg mb-6">
-          <AlertCircle className="h-5 w-5" />
-          <span className="text-sm">{error}</span>
-        </div>
+        <p
+          className="mb-6"
+          style={{
+            color: 'var(--accent)',
+            fontSize: '13px',
+            borderLeft: '2px solid var(--accent)',
+            paddingLeft: '0.75rem',
+          }}
+        >
+          {error}
+        </p>
       )}
 
       {timerExpired && !isCompleted && (
-        <div className="flex items-center space-x-2 text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 p-3 rounded-lg mb-6 animate-pulse">
-          <AlertTriangle className="h-5 w-5" />
-          <span className="text-sm font-medium">Time's up! You can still submit your answer, but try to wrap up.</span>
-        </div>
+        <p
+          className="mb-6 flex items-center gap-2 text-accent"
+          style={{
+            fontSize: '13px',
+            borderLeft: '2px solid var(--accent)',
+            paddingLeft: '0.75rem',
+          }}
+        >
+          <AlertTriangle className="h-4 w-4" />
+          <span>Time's up — you can still submit, but try to wrap up.</span>
+        </p>
       )}
 
       {!isCompleted ? (
         pendingFollowUp ? (
-          <div className="card border-2 border-purple-200 dark:border-purple-800">
-            <div className="mb-4">
-              <div className="flex items-center space-x-2 mb-3">
-                <Sparkles className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                <span className="text-sm font-medium text-purple-700 dark:text-purple-300 uppercase tracking-wide">
-                  Deep-dive follow-up
-                </span>
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                Based on your previous answer, the interviewer wants to dig deeper:
+          <div className="card" style={{ borderTop: '1px solid var(--accent)' }}>
+            <div className="mb-5">
+              <p className="eyebrow text-accent">Deep-dive follow-up</p>
+              <p className="mt-3 text-ink-muted" style={{ fontSize: '13px' }}>
+                Your previous answer warranted a closer look:
               </p>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              <h2 className="serif mt-3" style={{ fontSize: '20px', lineHeight: 1.35 }}>
                 {currentResponse?.follow_up_question}
               </h2>
             </div>
 
-            <div className="mb-4">
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Your Follow-up Answer
-                </label>
+            <div className="mb-5">
+              <div className="flex items-center justify-between mb-3">
+                <label className="eyebrow">Your follow-up answer</label>
                 <VoiceRecorder
                   disabled={submittingFollowUp}
                   onTranscript={(t) => setFollowUpAnswer((prev) => (prev ? prev + ' ' + t : t))}
@@ -246,7 +280,7 @@ export default function Interview() {
                 value={followUpAnswer}
                 onChange={(e) => setFollowUpAnswer(e.target.value)}
                 rows={5}
-                className="input-field resize-none"
+                className="input-field-boxed"
                 placeholder="Elaborate briefly — a strong follow-up answer is specific."
               />
             </div>
@@ -262,14 +296,14 @@ export default function Interview() {
               <button
                 onClick={handleSubmitFollowUp}
                 disabled={!followUpAnswer.trim() || submittingFollowUp}
-                className="btn-primary flex items-center space-x-2"
+                className="btn-primary"
               >
                 {submittingFollowUp ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <>
-                    <span>Submit & Continue</span>
-                    <ChevronRight className="h-5 w-5" />
+                    <span>Submit &amp; continue</span>
+                    <ChevronRight className="h-4 w-4" />
                   </>
                 )}
               </button>
@@ -278,7 +312,7 @@ export default function Interview() {
         ) : (
         <div className="card">
           <div className="mb-6">
-            <div className="flex items-center space-x-2 mb-4">
+            <div className="flex items-center justify-between mb-5">
               <span className={`badge ${
                 currentQuestion?.type === 'technical' ? 'badge-info' :
                 currentQuestion?.type === 'behavioral' ? 'badge-success' :
@@ -287,113 +321,169 @@ export default function Interview() {
               }`}>
                 {currentQuestion?.type}
               </span>
-              <span className={`flex items-center text-sm font-medium ${getTimerColor(timeRemaining)}`}>
-                <Timer className={`h-4 w-4 mr-1 ${timeRemaining <= 30 ? 'animate-pulse' : ''}`} />
+              <span className={`mono flex items-center gap-1.5 ${getTimerColor(timeRemaining)}`} style={{ fontSize: '13px' }}>
+                <Timer className={`h-3.5 w-3.5 ${timeRemaining <= 30 ? 'animate-pulse' : ''}`} />
                 {formatTime(timeRemaining)}
               </span>
             </div>
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+            <h2 className="serif" style={{ fontSize: '21px', lineHeight: 1.35, color: 'var(--ink)' }}>
               {currentQuestion?.question}
             </h2>
           </div>
 
-          <div className="mb-6">
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Your Answer
-              </label>
-              <VoiceRecorder
-                disabled={submitting}
-                onTranscript={(t) => setAnswer((prev) => (prev ? prev + ' ' + t : t))}
-              />
-            </div>
-            <textarea
-              value={answer}
-              onChange={(e) => setAnswer(e.target.value)}
-              rows={8}
-              className="input-field resize-none"
-              placeholder="Type your answer, or click 'Record answer' to speak it."
-            />
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-              Tip: Structure your answer clearly. For behavioral questions, use the STAR method.
-            </p>
-          </div>
+          {currentQuestion?.type === 'coding' ? (
+            <>
+              <div className="mb-6">
+                <CodeEditor
+                  languageId={codeLanguage}
+                  onLanguageChange={setCodeLanguage}
+                  code={code}
+                  onCodeChange={setCode}
+                  disabled={submitting}
+                />
+                <p className="text-ink-faint mt-2" style={{ fontSize: '12px' }}>
+                  Tip: test with "Run Code" before submitting. Think out loud with comments.
+                </p>
+              </div>
 
-          <div className="flex justify-between">
-            <button
-              onClick={() => setAnswer('')}
-              className="btn-secondary"
-              disabled={!answer}
-            >
-              Clear
-            </button>
-            <button
-              onClick={handleSubmitAnswer}
-              disabled={!answer.trim() || submitting}
-              className="btn-primary flex items-center space-x-2"
-            >
-              {submitting ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <>
-                  <span>Submit Answer</span>
-                  <ChevronRight className="h-5 w-5" />
-                </>
-              )}
-            </button>
-          </div>
+              <div className="flex justify-between">
+                <button
+                  onClick={() => {
+                    const lang = LANGUAGES.find(l => l.id === codeLanguage) || LANGUAGES[0];
+                    setCode(lang.starter);
+                  }}
+                  className="btn-secondary"
+                  disabled={submitting}
+                >
+                  Reset
+                </button>
+                <button
+                  onClick={handleSubmitAnswer}
+                  disabled={!code.trim() || submitting}
+                  className="btn-primary"
+                >
+                  {submitting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <>
+                      <span>Submit solution</span>
+                      <ChevronRight className="h-4 w-4" />
+                    </>
+                  )}
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-3">
+                  <label className="eyebrow">Your answer</label>
+                  <VoiceRecorder
+                    disabled={submitting}
+                    onTranscript={(t) => setAnswer((prev) => (prev ? prev + ' ' + t : t))}
+                  />
+                </div>
+                <textarea
+                  value={answer}
+                  onChange={(e) => setAnswer(e.target.value)}
+                  rows={8}
+                  className="input-field-boxed"
+                  placeholder="Type your answer, or click 'Record' to speak it."
+                />
+                <p className="text-ink-faint mt-2" style={{ fontSize: '12px' }}>
+                  Structure your answer clearly. For behavioural questions, the STAR method works well.
+                </p>
+              </div>
+
+              <div className="flex justify-between">
+                <button
+                  onClick={() => setAnswer('')}
+                  className="btn-secondary"
+                  disabled={!answer}
+                >
+                  Clear
+                </button>
+                <button
+                  onClick={handleSubmitAnswer}
+                  disabled={!answer.trim() || submitting}
+                  className="btn-primary"
+                >
+                  {submitting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <>
+                      <span>Submit answer</span>
+                      <ChevronRight className="h-4 w-4" />
+                    </>
+                  )}
+                </button>
+              </div>
+            </>
+          )}
         </div>
         )
       ) : (
-        <div className="card text-center">
-          <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-            All Questions Answered!
+        <div className="card text-center" style={{ padding: '3rem 2rem' }}>
+          <p className="eyebrow">Round complete</p>
+          <h2 className="heading-display-italic mt-4" style={{ fontSize: '32px' }}>
+            All answered.
           </h2>
-          <p className="text-gray-600 dark:text-gray-300 mb-6">
-            You've answered all {questions.length} questions. Click below to get your evaluation and feedback.
+          <p className="mt-3 text-ink-muted max-w-md mx-auto" style={{ fontSize: '14px' }}>
+            You've worked through all {questions.length} questions. Submit for evaluation when you're ready.
           </p>
           <button
             onClick={handleCompleteInterview}
             disabled={completing}
-            className="btn-primary flex items-center justify-center space-x-2 mx-auto"
+            className="btn-primary mt-8"
           >
             {completing ? (
               <>
-                <Loader2 className="h-5 w-5 animate-spin" />
-                <span>Evaluating...</span>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Evaluating…</span>
               </>
             ) : (
               <>
-                <span>Get My Results</span>
-                <ChevronRight className="h-5 w-5" />
+                <span>See my results</span>
+                <ChevronRight className="h-4 w-4" />
               </>
             )}
           </button>
         </div>
       )}
 
-      <div className="mt-6">
-        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Progress</h3>
+      <div className="mt-10">
+        <p className="eyebrow mb-4">Progress</p>
         <div className="flex flex-wrap gap-2">
-          {questions.map((_, index) => (
-            <div
-              key={index}
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                index < currentQuestionIndex
-                  ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400'
-                  : index === currentQuestionIndex
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500'
-              }`}
-            >
-              {index < currentQuestionIndex ? (
-                <CheckCircle className="h-4 w-4" />
-              ) : (
-                index + 1
-              )}
-            </div>
-          ))}
+          {questions.map((_, index) => {
+            const done = index < currentQuestionIndex;
+            const current = index === currentQuestionIndex;
+            const style: React.CSSProperties = {
+              width: '28px',
+              height: '28px',
+              borderRadius: '2px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '12px',
+              fontFamily: 'var(--mono)',
+              border: '1px solid var(--rule)',
+              color: 'var(--ink-faint)',
+              background: 'transparent',
+            };
+            if (done) {
+              style.background = 'var(--ink)';
+              style.color = 'var(--surface)';
+              style.borderColor = 'var(--ink)';
+            } else if (current) {
+              style.borderColor = 'var(--ink)';
+              style.color = 'var(--ink)';
+            }
+            return (
+              <div key={index} style={style}>
+                {done ? <CheckCircle className="h-3.5 w-3.5" /> : index + 1}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

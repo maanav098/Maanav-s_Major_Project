@@ -2,10 +2,6 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { interviewApi } from '../services/api';
 import type { Interview } from '../types';
-import {
-  Trophy, TrendingUp, MessageSquare, Target,
-  CheckCircle, XCircle, Lightbulb, ArrowLeft, Loader2
-} from 'lucide-react';
 
 export default function InterviewResult() {
   const { id } = useParams<{ id: string }>();
@@ -29,150 +25,190 @@ export default function InterviewResult() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="spinner" />
       </div>
     );
   }
 
   if (!interview || !interview.overall_score) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-8 text-center">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Results not available</h2>
-        <Link to="/dashboard" className="btn-primary mt-4 inline-block">
-          Back to Dashboard
+      <div className="max-w-3xl mx-auto px-6 py-20 text-center">
+        <p className="serif-italic text-ink" style={{ fontSize: '22px' }}>
+          Results not available yet.
+        </p>
+        <Link to="/dashboard" className="btn-secondary mt-6 inline-flex">
+          &larr; Back to dashboard
         </Link>
       </div>
     );
   }
 
-  const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-600 dark:text-green-400';
-    if (score >= 60) return 'text-yellow-600 dark:text-yellow-400';
-    return 'text-red-600 dark:text-red-400';
-  };
-
-  const getScoreBg = (score: number) => {
-    if (score >= 80) return '!bg-green-100 dark:!bg-green-900/40';
-    if (score >= 60) return '!bg-yellow-100 dark:!bg-yellow-900/40';
-    return '!bg-red-100 dark:!bg-red-900/40';
-  };
-
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <Link to="/dashboard" className="flex items-center text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white mb-6">
-        <ArrowLeft className="h-5 w-5 mr-2" />
-        Back to Dashboard
+    <div className="max-w-4xl mx-auto px-6 lg:px-10 py-14">
+      <Link to="/dashboard" className="btn-text" style={{ fontSize: '13px' }}>
+        &larr; Dashboard
       </Link>
 
-      <div className="text-center mb-8">
-        <Trophy className="h-16 w-16 text-yellow-500 mx-auto mb-4" />
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Interview Complete!</h1>
-        <p className="text-gray-600 dark:text-gray-300 mt-2">
-          {interview.role} {interview.company && `• ${interview.company}`}
-        </p>
+      <div className="mt-10">
+        <p className="eyebrow">Round complete</p>
+        <h1
+          className="heading-display mt-3"
+          style={{ fontSize: 'clamp(2rem, 4vw, 2.8rem)' }}
+        >
+          A read on{' '}
+          <span className="serif-italic">
+            {interview.role}
+            {interview.company && ` · ${interview.company}`}
+          </span>
+          .
+        </h1>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className={`card text-center ${getScoreBg(interview.overall_score)}`}>
-          <Target className={`h-8 w-8 mx-auto mb-2 ${getScoreColor(interview.overall_score)}`} />
-          <p className="text-sm text-gray-700 dark:text-gray-200">Overall Score</p>
-          <p className={`text-4xl font-bold ${getScoreColor(interview.overall_score)}`}>
-            {interview.overall_score}
-          </p>
-        </div>
-
-        <div className={`card text-center ${getScoreBg(interview.technical_score || 0)}`}>
-          <TrendingUp className={`h-8 w-8 mx-auto mb-2 ${getScoreColor(interview.technical_score || 0)}`} />
-          <p className="text-sm text-gray-700 dark:text-gray-200">Technical Score</p>
-          <p className={`text-4xl font-bold ${getScoreColor(interview.technical_score || 0)}`}>
-            {interview.technical_score || 0}
-          </p>
-        </div>
-
-        <div className={`card text-center ${getScoreBg(interview.communication_score || 0)}`}>
-          <MessageSquare className={`h-8 w-8 mx-auto mb-2 ${getScoreColor(interview.communication_score || 0)}`} />
-          <p className="text-sm text-gray-700 dark:text-gray-200">Communication</p>
-          <p className={`text-4xl font-bold ${getScoreColor(interview.communication_score || 0)}`}>
-            {interview.communication_score || 0}
-          </p>
-        </div>
+      {/* Score strip */}
+      <div
+        className="grid grid-cols-1 sm:grid-cols-3 mt-12"
+        style={{ borderTop: '1px solid var(--rule)', borderBottom: '1px solid var(--rule)' }}
+      >
+        {[
+          { label: 'Overall', value: interview.overall_score },
+          { label: 'Technical', value: interview.technical_score || 0 },
+          { label: 'Communication', value: interview.communication_score || 0 },
+        ].map((s, i) => (
+          <div
+            key={s.label}
+            style={{
+              borderLeft: i === 0 ? undefined : '1px solid var(--rule)',
+              padding: '2.5rem 1.75rem',
+            }}
+          >
+            <p className="eyebrow">{s.label}</p>
+            <div className="flex items-baseline gap-2 mt-3">
+              <p
+                className="numeric"
+                style={{
+                  fontSize: 'clamp(2.6rem, 5vw, 3.6rem)',
+                  lineHeight: 1,
+                  color: 'var(--ink)',
+                }}
+              >
+                {s.value}
+              </p>
+              <span className="mono text-ink-faint" style={{ fontSize: '14px' }}>
+                / 100
+              </span>
+            </div>
+          </div>
+        ))}
       </div>
 
       {interview.level_prediction && (
-        <div className="card bg-gradient-to-r from-blue-500 to-purple-600 text-white mb-8">
-          <div className="text-center">
-            <h2 className="text-xl font-semibold mb-2">Level Prediction</h2>
-            <p className="text-2xl font-bold">{interview.level_prediction}</p>
-          </div>
+        <div className="mt-12 text-center">
+          <p className="eyebrow">Estimated level</p>
+          <p
+            className="heading-display-italic mt-3"
+            style={{ fontSize: 'clamp(2rem, 4vw, 2.8rem)' }}
+          >
+            {interview.level_prediction}
+          </p>
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div className="card">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-            <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mt-16">
+        <section>
+          <p className="eyebrow">What worked</p>
+          <h2 className="serif mt-3" style={{ fontSize: '20px' }}>
             Strengths
           </h2>
           {interview.strengths && interview.strengths.length > 0 ? (
-            <ul className="space-y-2">
+            <ul className="mt-5">
               {interview.strengths.map((strength, index) => (
-                <li key={index} className="flex items-start">
-                  <CheckCircle className="h-5 w-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700 dark:text-gray-200">{strength}</span>
+                <li
+                  key={index}
+                  className="text-ink py-3"
+                  style={{
+                    borderTop: '1px solid var(--rule)',
+                    fontSize: '15px',
+                    lineHeight: 1.55,
+                  }}
+                >
+                  {strength}
                 </li>
               ))}
+              <li style={{ borderTop: '1px solid var(--rule)' }} />
             </ul>
           ) : (
-            <p className="text-gray-500 dark:text-gray-400">No specific strengths identified</p>
+            <p className="mt-4 text-ink-muted">No specific strengths identified.</p>
           )}
-        </div>
+        </section>
 
-        <div className="card">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-            <XCircle className="h-5 w-5 text-red-500 mr-2" />
-            Areas for Improvement
+        <section>
+          <p className="eyebrow">Where to grow</p>
+          <h2 className="serif mt-3" style={{ fontSize: '20px' }}>
+            Areas to develop
           </h2>
           {interview.weaknesses && interview.weaknesses.length > 0 ? (
-            <ul className="space-y-2">
+            <ul className="mt-5">
               {interview.weaknesses.map((weakness, index) => (
-                <li key={index} className="flex items-start">
-                  <XCircle className="h-5 w-5 text-red-500 mr-2 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700 dark:text-gray-200">{weakness}</span>
+                <li
+                  key={index}
+                  className="text-ink py-3"
+                  style={{
+                    borderTop: '1px solid var(--rule)',
+                    fontSize: '15px',
+                    lineHeight: 1.55,
+                  }}
+                >
+                  {weakness}
                 </li>
               ))}
+              <li style={{ borderTop: '1px solid var(--rule)' }} />
             </ul>
           ) : (
-            <p className="text-gray-500 dark:text-gray-400">No specific areas identified</p>
+            <p className="mt-4 text-ink-muted">No specific areas identified.</p>
           )}
-        </div>
+        </section>
       </div>
 
-      <div className="card mb-8">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
-          <Lightbulb className="h-5 w-5 text-yellow-500 mr-2" />
-          Suggestions for Improvement
+      <section className="mt-16">
+        <p className="eyebrow">For next time</p>
+        <h2 className="serif mt-3" style={{ fontSize: '20px' }}>
+          Suggestions
         </h2>
         {interview.suggestions && interview.suggestions.length > 0 ? (
-          <ul className="space-y-3">
+          <ul className="mt-5">
             {interview.suggestions.map((suggestion, index) => (
-              <li key={index} className="flex items-start bg-yellow-50 dark:bg-yellow-900/30 p-3 rounded-lg">
-                <Lightbulb className="h-5 w-5 text-yellow-500 mr-2 mt-0.5 flex-shrink-0" />
-                <span className="text-gray-700 dark:text-gray-200">{suggestion}</span>
+              <li
+                key={index}
+                className="text-ink py-4 flex gap-4"
+                style={{
+                  borderTop: '1px solid var(--rule)',
+                  fontSize: '15px',
+                  lineHeight: 1.55,
+                }}
+              >
+                <span
+                  className="numeric serif-italic text-ink-faint flex-shrink-0"
+                  style={{ minWidth: '2rem' }}
+                >
+                  {String(index + 1).padStart(2, '0')}.
+                </span>
+                <span>{suggestion}</span>
               </li>
             ))}
+            <li style={{ borderTop: '1px solid var(--rule)' }} />
           </ul>
         ) : (
-          <p className="text-gray-500 dark:text-gray-400">No specific suggestions</p>
+          <p className="mt-4 text-ink-muted">No specific suggestions.</p>
         )}
-      </div>
+      </section>
 
-      <div className="flex justify-center space-x-4">
+      <div className="flex flex-wrap items-center gap-6 mt-16">
         <Link to="/interview/new" className="btn-primary">
-          Practice Again
+          Practise again
         </Link>
-        <Link to="/my-interviews" className="btn-secondary">
-          View All Interviews
+        <Link to="/my-interviews" className="btn-text">
+          View all interviews &rarr;
         </Link>
       </div>
     </div>
