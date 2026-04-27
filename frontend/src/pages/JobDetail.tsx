@@ -1,8 +1,31 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { jobApi } from '../services/api';
-import type { Job, JobInterviewSummary } from '../types';
+import type { Job, JobInterviewSummary, RecruiterDecision } from '../types';
 import { Pencil } from 'lucide-react';
+
+const DECISION_FILTERS: { value: RecruiterDecision | 'all'; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'shortlisted', label: 'Shortlisted' },
+  { value: 'on_hold', label: 'Hold' },
+  { value: 'rejected', label: 'Rejected' },
+  { value: 'pending', label: 'Pending' },
+];
+
+function decisionBadge(decision: RecruiterDecision) {
+  if (decision === 'pending') {
+    return <span className="text-ink-faint" style={{ fontSize: '13px' }}>—</span>;
+  }
+  const cls =
+    decision === 'shortlisted'
+      ? 'badge badge-success'
+      : decision === 'on_hold'
+        ? 'badge badge-warning'
+        : 'badge badge-error';
+  const label =
+    decision === 'shortlisted' ? 'Shortlisted' : decision === 'on_hold' ? 'On hold' : 'Rejected';
+  return <span className={cls}>{label}</span>;
+}
 
 export default function JobDetail() {
   const { id } = useParams<{ id: string }>();
@@ -10,6 +33,7 @@ export default function JobDetail() {
   const [interviews, setInterviews] = useState<JobInterviewSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [decisionFilter, setDecisionFilter] = useState<RecruiterDecision | 'all'>('all');
 
   useEffect(() => {
     if (!id) return;
@@ -153,7 +177,7 @@ export default function JobDetail() {
 
       <hr className="rule" style={{ margin: '3rem 0 2rem' }} />
 
-      <div className="flex items-end justify-between mb-6">
+      <div className="flex items-end justify-between mb-6 flex-wrap gap-4">
         <div>
           <p className="eyebrow">Applicants</p>
           <h2 className="serif mt-2" style={{ fontSize: '24px' }}>
@@ -161,6 +185,21 @@ export default function JobDetail() {
           </h2>
         </div>
       </div>
+
+      {interviews.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-4">
+          {DECISION_FILTERS.map((f) => (
+            <button
+              key={f.value}
+              type="button"
+              onClick={() => setDecisionFilter(f.value)}
+              className={decisionFilter === f.value ? 'pill pill-active' : 'pill'}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {interviews.length === 0 ? (
         <div
@@ -179,7 +218,7 @@ export default function JobDetail() {
           <table className="min-w-full" style={{ fontSize: '14px' }}>
             <thead>
               <tr>
-                {['Candidate', 'Status', 'Overall', 'Tech.', 'Comm.', 'Level', 'Completed'].map((h) => (
+                {['Candidate', 'Decision', 'Status', 'Overall', 'Tech.', 'Comm.', 'Level', 'Completed'].map((h) => (
                   <th
                     key={h}
                     className="eyebrow text-left"
@@ -195,7 +234,11 @@ export default function JobDetail() {
               </tr>
             </thead>
             <tbody>
-              {interviews.map((row) => {
+              {interviews
+                .filter((row) =>
+                  decisionFilter === 'all' ? true : row.recruiter_decision === decisionFilter,
+                )
+                .map((row) => {
                 const target = row.status === 'evaluated'
                   ? `/interview/${row.interview_id}/result`
                   : `/interview/${row.interview_id}`;
@@ -216,6 +259,9 @@ export default function JobDetail() {
                       <div className="text-ink-faint" style={{ fontSize: '12px' }}>
                         {row.candidate_email}
                       </div>
+                    </td>
+                    <td style={{ padding: '0.85rem 1rem' }}>
+                      {decisionBadge(row.recruiter_decision)}
                     </td>
                     <td style={{ padding: '0.85rem 1rem' }}>{statusBadge(row.status)}</td>
                     <td style={{ padding: '0.85rem 1rem' }}>

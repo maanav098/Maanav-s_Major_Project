@@ -1,11 +1,33 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { recruiterApi } from '../services/api';
-import type { RecruiterCandidate } from '../types';
+import type { RecruiterCandidate, RecruiterDecision } from '../types';
+
+const FILTERS: { value: RecruiterDecision | 'all'; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'shortlisted', label: 'Shortlisted' },
+  { value: 'on_hold', label: 'Hold' },
+  { value: 'rejected', label: 'Rejected' },
+  { value: 'pending', label: 'Pending' },
+];
+
+function DecisionBadge({ decision }: { decision: RecruiterDecision }) {
+  if (decision === 'pending') return null;
+  const cls =
+    decision === 'shortlisted'
+      ? 'badge badge-success'
+      : decision === 'on_hold'
+        ? 'badge badge-warning'
+        : 'badge badge-error';
+  const label =
+    decision === 'shortlisted' ? 'Shortlisted' : decision === 'on_hold' ? 'On hold' : 'Rejected';
+  return <span className={cls}>{label}</span>;
+}
 
 export default function Candidates() {
   const [rows, setRows] = useState<RecruiterCandidate[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<RecruiterDecision | 'all'>('all');
 
   useEffect(() => {
     (async () => {
@@ -28,6 +50,8 @@ export default function Candidates() {
     );
   }
 
+  const filtered = filter === 'all' ? rows : rows.filter((c) => c.latest_decision === filter);
+
   return (
     <div className="max-w-5xl mx-auto px-6 lg:px-10 py-14">
       <p className="eyebrow">Roster</p>
@@ -41,18 +65,33 @@ export default function Candidates() {
         Everyone who has interviewed for one of your postings.
       </p>
 
-      <div className="mt-12" style={{ borderTop: '1px solid var(--rule)' }}>
-        {rows.length === 0 ? (
+      <div className="mt-10 flex flex-wrap gap-2">
+        {FILTERS.map((f) => (
+          <button
+            key={f.value}
+            type="button"
+            onClick={() => setFilter(f.value)}
+            className={filter === f.value ? 'pill pill-active' : 'pill'}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-8" style={{ borderTop: '1px solid var(--rule)' }}>
+        {filtered.length === 0 ? (
           <div className="py-20 text-center">
             <p className="serif-italic text-ink" style={{ fontSize: '20px' }}>
-              No candidates yet.
+              {rows.length === 0 ? 'No candidates yet.' : 'No matches for that filter.'}
             </p>
             <p className="mt-2 text-ink-muted" style={{ fontSize: '14px' }}>
-              They'll appear here once they begin interviewing.
+              {rows.length === 0
+                ? "They'll appear here once they begin interviewing."
+                : 'Try a different decision filter.'}
             </p>
           </div>
         ) : (
-          rows.map((c, idx) => (
+          filtered.map((c, idx) => (
             <Link
               key={c.candidate_id}
               to={`/interview/${c.latest_interview_id}/result`}
@@ -67,12 +106,15 @@ export default function Candidates() {
                   >
                     No. {String(idx + 1).padStart(2, '0')} · {c.email}
                   </p>
-                  <h3
-                    className="serif mt-2 text-ink group-hover:text-accent transition-colors"
-                    style={{ fontSize: '22px', lineHeight: 1.2 }}
-                  >
-                    {c.full_name}
-                  </h3>
+                  <div className="mt-2 flex items-center gap-3 flex-wrap">
+                    <h3
+                      className="serif text-ink group-hover:text-accent transition-colors"
+                      style={{ fontSize: '22px', lineHeight: 1.2 }}
+                    >
+                      {c.full_name}
+                    </h3>
+                    <DecisionBadge decision={c.latest_decision} />
+                  </div>
                   <div
                     className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-ink-muted"
                     style={{ fontSize: '13px' }}

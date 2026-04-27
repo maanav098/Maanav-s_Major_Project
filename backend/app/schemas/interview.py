@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from datetime import datetime
-from app.models.interview import InterviewStatus
+from app.models.interview import InterviewStatus, RecruiterDecision
 
 
 class InterviewCreate(BaseModel):
@@ -19,6 +19,11 @@ class InterviewUpdate(BaseModel):
 class AnswerSubmit(BaseModel):
     question_id: int
     answer: str
+
+
+class DecisionUpdate(BaseModel):
+    decision: RecruiterDecision
+    notes: Optional[str] = None
 
 
 class InterviewResponse(BaseModel):
@@ -41,6 +46,9 @@ class InterviewResponse(BaseModel):
     started_at: Optional[datetime]
     completed_at: Optional[datetime]
     created_at: datetime
+    recruiter_decision: RecruiterDecision = RecruiterDecision.PENDING
+    recruiter_notes: Optional[str] = None
+    decision_updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True

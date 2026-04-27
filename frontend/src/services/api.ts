@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Candidate, Job, Interview, Question, EvaluationResult, JobInterviewSummary, RecruiterCandidate, JdAnalysis } from '../types';
+import type { Candidate, Job, Interview, Question, EvaluationResult, JobInterviewSummary, RecruiterCandidate, JdAnalysis, RecruiterDecision } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
@@ -137,6 +137,13 @@ export const interviewApi = {
   },
   get: async (id: number): Promise<Interview> => {
     const response = await api.get(`/interviews/${id}`);
+    return response.data;
+  },
+  updateDecision: async (
+    id: number,
+    data: { decision: RecruiterDecision; notes?: string },
+  ): Promise<Interview> => {
+    const response = await api.patch(`/interviews/${id}/decision`, data);
     return response.data;
   },
 };

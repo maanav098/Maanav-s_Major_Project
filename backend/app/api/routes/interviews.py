@@ -6,13 +6,13 @@ from typing import List
 from datetime import datetime
 
 from app.core.database import get_db
-from app.api.deps import get_current_user, get_current_candidate
+from app.api.deps import get_current_user, get_current_candidate, get_current_recruiter
 from app.models.user import User
 from app.models.candidate import Candidate
 from app.models.question import Question, QuestionType, Difficulty
 from app.models.job import Job
 from app.models.interview import Interview, InterviewStatus
-from app.schemas.interview import InterviewCreate, InterviewResponse, AnswerSubmit
+from app.schemas.interview import InterviewCreate, InterviewResponse, AnswerSubmit, DecisionUpdate
 from app.services.interview_engine import get_interview_questions
 from app.services.evaluation_engine import evaluate_interview
 from app.services.transcription import transcribe_audio, generate_follow_up
@@ -290,4 +290,29 @@ async def get_interview(
     elif role != "admin":
         raise HTTPException(status_code=403, detail="Access denied")
 
+    return interview
+
+
+@router.patch("/{interview_id}/decision", response_model=InterviewResponse)
+async def update_decision(
+    interview_id: int,
+    payload: DecisionUpdate,
+    current_user: User = Depends(get_current_recruiter),
+    db: Session = Depends(get_db),
+):
+    interview = db.query(Interview).filter(Interview.id == interview_id).first()
+    if not interview or not interview.job_id:
+        raise HTTPException(status_code=404, detail="Interview not found")
+
+    job = db.query(Job).filter(
+        Job.id == interview.job_id, Job.recruiter_id == current_user.id
+    ).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Interview not found")
+
+    interview.recruiter_decision = payload.decision
+    interview.recruiter_notes = payload.notes
+    interview.decision_updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(interview)
     return interview

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, JSON, Enum, Float
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, JSON, Enum, Float
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import enum
@@ -11,6 +11,13 @@ class InterviewStatus(str, enum.Enum):
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
     EVALUATED = "evaluated"
+
+
+class RecruiterDecision(str, enum.Enum):
+    PENDING = "pending"
+    SHORTLISTED = "shortlisted"
+    ON_HOLD = "on_hold"
+    REJECTED = "rejected"
 
 
 class Interview(Base):
@@ -39,6 +46,10 @@ class Interview(Base):
     completed_at = Column(DateTime(timezone=True))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    recruiter_decision = Column(Enum(RecruiterDecision), default=RecruiterDecision.PENDING)
+    recruiter_notes = Column(Text)
+    decision_updated_at = Column(DateTime(timezone=True))
 
     candidate = relationship("Candidate", back_populates="interviews")
     job = relationship("Job", back_populates="interviews")

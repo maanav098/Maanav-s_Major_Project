@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
-import { jobApi, recruiterApi } from '../services/api';
-import type { RecruiterCandidate } from '../types';
+import { interviewApi, jobApi, recruiterApi } from '../services/api';
+import type { Interview, RecruiterCandidate } from '../types';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -108,6 +108,27 @@ function ActionRow({
 
 function CandidateDashboard() {
   const { user } = useAuth();
+  const [interviews, setInterviews] = useState<Interview[] | null>(null);
+
+  useEffect(() => {
+    interviewApi
+      .myInterviews()
+      .then(setInterviews)
+      .catch(() => setInterviews([]));
+  }, []);
+
+  const total = interviews?.length ?? null;
+  const scored = (interviews ?? []).filter(
+    (i) => typeof i.overall_score === 'number',
+  );
+  const avg =
+    scored.length > 0
+      ? (scored.reduce((s, i) => s + (i.overall_score as number), 0) / scored.length).toFixed(1)
+      : '—';
+  const uniqueRoles = new Set((interviews ?? []).map((i) => i.role).filter(Boolean));
+  const rolesPractised = interviews ? uniqueRoles.size : null;
+
+  const fmt = (n: number | null) => (n == null ? '—' : n.toString());
 
   return (
     <div className="max-w-6xl mx-auto px-6 lg:px-10 py-14">
@@ -122,9 +143,9 @@ function CandidateDashboard() {
 
       <StatStrip
         items={[
-          { label: 'Interviews taken', value: '0', sub: 'Across all roles' },
-          { label: 'Average score', value: '—', sub: 'Out of 100' },
-          { label: 'Skills tracked', value: '0', sub: 'Surfaced in feedback' },
+          { label: 'Interviews taken', value: fmt(total), sub: 'Across all roles' },
+          { label: 'Average score', value: avg, sub: 'Out of 100' },
+          { label: 'Roles practised', value: fmt(rolesPractised), sub: 'Distinct roles attempted' },
         ]}
       />
 

@@ -9,7 +9,7 @@ from app.core.database import get_db
 from app.api.deps import get_current_recruiter
 from app.models.user import User
 from app.models.candidate import Candidate
-from app.models.interview import Interview, InterviewStatus
+from app.models.interview import Interview, InterviewStatus, RecruiterDecision
 from app.models.job import Job
 
 router = APIRouter()
@@ -24,6 +24,7 @@ class RecruiterCandidateRow(BaseModel):
     best_overall_score: Optional[float] = None
     latest_interview_at: Optional[datetime] = None
     latest_interview_id: int
+    latest_decision: RecruiterDecision = RecruiterDecision.PENDING
 
 
 @router.get("/me/candidates", response_model=List[RecruiterCandidateRow])
@@ -52,7 +53,7 @@ async def list_my_candidates(
     result: List[RecruiterCandidateRow] = []
     for r in rows:
         latest = (
-            db.query(Interview.id)
+            db.query(Interview.id, Interview.recruiter_decision)
             .join(Job, Job.id == Interview.job_id)
             .filter(
                 Interview.candidate_id == r.candidate_id,
@@ -61,6 +62,8 @@ async def list_my_candidates(
             .order_by(Interview.created_at.desc())
             .first()
         )
+        latest_id = latest[0] if latest else 0
+        latest_decision = (latest[1] if latest else None) or RecruiterDecision.PENDING
         result.append(
             RecruiterCandidateRow(
                 candidate_id=r.candidate_id,
@@ -70,7 +73,8 @@ async def list_my_candidates(
                 interview_count=r.interview_count,
                 best_overall_score=r.best_overall_score,
                 latest_interview_at=r.latest_interview_at,
-                latest_interview_id=latest[0] if latest else 0,
+                latest_interview_id=latest_id,
+                latest_decision=latest_decision,
             )
         )
     return result

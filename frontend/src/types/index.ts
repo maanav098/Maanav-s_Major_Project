@@ -66,6 +66,8 @@ export interface Question {
   time_limit_minutes: number;
 }
 
+export type RecruiterDecision = 'pending' | 'shortlisted' | 'on_hold' | 'rejected';
+
 export interface Interview {
   id: number;
   candidate_id: number;
@@ -86,6 +88,9 @@ export interface Interview {
   started_at?: string;
   completed_at?: string;
   created_at: string;
+  recruiter_decision?: RecruiterDecision;
+  recruiter_notes?: string;
+  decision_updated_at?: string;
 }
 
 export interface QuestionAsked {
@@ -129,6 +134,7 @@ export interface JobInterviewSummary {
   started_at?: string;
   completed_at?: string;
   created_at: string;
+  recruiter_decision: RecruiterDecision;
 }
 
 export interface RecruiterCandidate {
@@ -140,4 +146,5 @@ export interface RecruiterCandidate {
   best_overall_score?: number;
   latest_interview_at?: string;
   latest_interview_id: number;
+  latest_decision: RecruiterDecision;
 }

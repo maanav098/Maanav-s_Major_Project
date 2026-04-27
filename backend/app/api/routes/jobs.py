@@ -8,7 +8,7 @@ from app.core.database import get_db
 from app.api.deps import get_current_user, get_current_recruiter
 from app.models.user import User
 from app.models.candidate import Candidate
-from app.models.interview import Interview, InterviewStatus
+from app.models.interview import Interview, InterviewStatus, RecruiterDecision
 from app.models.job import Job
 from app.schemas.job import JobCreate, JobResponse, JobUpdate, JdAnalysisRequest, JdAnalysisResponse
 from app.services.jd_analyzer import analyze_jd
@@ -29,6 +29,7 @@ class JobInterviewSummary(BaseModel):
     started_at: Optional[datetime]
     completed_at: Optional[datetime]
     created_at: datetime
+    recruiter_decision: RecruiterDecision = RecruiterDecision.PENDING
 
 
 @router.post("/", response_model=JobResponse)
@@ -123,6 +124,7 @@ async def list_job_interviews(
             started_at=interview.started_at,
             completed_at=interview.completed_at,
             created_at=interview.created_at,
+            recruiter_decision=interview.recruiter_decision or RecruiterDecision.PENDING,
         )
         for interview, candidate, user in rows
     ]

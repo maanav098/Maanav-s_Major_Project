@@ -1,10 +1,120 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { interviewApi } from '../services/api';
-import type { Interview } from '../types';
+import { useAuth } from '../context/AuthContext';
+import type { Interview, RecruiterDecision } from '../types';
+
+const DECISION_OPTIONS: { value: RecruiterDecision; label: string }[] = [
+  { value: 'shortlisted', label: 'Shortlist' },
+  { value: 'on_hold', label: 'Hold' },
+  { value: 'rejected', label: 'Reject' },
+  { value: 'pending', label: 'Reset' },
+];
+
+function DecisionPanel({
+  interview,
+  onUpdate,
+}: {
+  interview: Interview;
+  onUpdate: (i: Interview) => void;
+}) {
+  const persistedDecision: RecruiterDecision = interview.recruiter_decision ?? 'pending';
+  const persistedNotes = interview.recruiter_notes ?? '';
+  const [decision, setDecision] = useState<RecruiterDecision>(persistedDecision);
+  const [notes, setNotes] = useState<string>(persistedNotes);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const dirty = decision !== persistedDecision || notes !== persistedNotes;
+
+  const save = async () => {
+    setSaving(true);
+    setError('');
+    try {
+      const updated = await interviewApi.updateDecision(interview.id, {
+        decision,
+        notes: notes.trim() || undefined,
+      });
+      onUpdate(updated);
+    } catch {
+      setError('Could not save. Try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <section
+      className="card mt-10"
+      style={{ borderTop: '1px solid var(--accent)' }}
+    >
+      <p className="eyebrow text-accent">Decision</p>
+
+      <div className="mt-5 flex flex-wrap gap-2">
+        {DECISION_OPTIONS.map((opt) => (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => setDecision(opt.value)}
+            className={decision === opt.value ? 'pill pill-active' : 'pill'}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+
+      <label className="eyebrow block mt-7 mb-2">Notes (optional)</label>
+      <textarea
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+        rows={3}
+        className="input-field-boxed"
+        placeholder="Hiring manager comments, follow-up plans, sticking points…"
+      />
+
+      {error && (
+        <p
+          className="mt-3"
+          style={{
+            color: 'var(--accent)',
+            fontSize: '13px',
+            borderLeft: '2px solid var(--accent)',
+            paddingLeft: '0.75rem',
+          }}
+        >
+          {error}
+        </p>
+      )}
+
+      <div className="flex items-center justify-between mt-6 flex-wrap gap-3">
+        <p className="mono text-ink-faint" style={{ fontSize: '12px' }}>
+          {interview.decision_updated_at
+            ? `Last updated ${new Date(interview.decision_updated_at).toLocaleString(undefined, {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })}`
+            : 'No decision recorded yet'}
+        </p>
+        <button
+          type="button"
+          onClick={save}
+          disabled={!dirty || saving}
+          className="btn-primary"
+        >
+          {saving ? 'Saving…' : 'Save decision'}
+        </button>
+      </div>
+    </section>
+  );
+}
 
 export default function InterviewResult() {
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
+  const isRecruiter = user?.role === 'recruiter';
   const [interview, setInterview] = useState<Interview | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -64,6 +174,10 @@ export default function InterviewResult() {
           .
         </h1>
       </div>
+
+      {isRecruiter && (
+        <DecisionPanel interview={interview} onUpdate={setInterview} />
+      )}
 
       {/* Score strip */}
       <div
@@ -204,12 +318,27 @@ export default function InterviewResult() {
       </section>
 
       <div className="flex flex-wrap items-center gap-6 mt-16">
-        <Link to="/interview/new" className="btn-primary">
-          Practise again
-        </Link>
-        <Link to="/my-interviews" className="btn-text">
-          View all interviews &rarr;
-        </Link>
+        {isRecruiter ? (
+          <>
+            <Link to="/candidates" className="btn-primary">
+              Back to candidates
+            </Link>
+            {interview.job_id && (
+              <Link to={`/jobs/${interview.job_id}`} className="btn-text">
+                View posting &rarr;
+              </Link>
+            )}
+          </>
+        ) : (
+          <>
+            <Link to="/interview/new" className="btn-primary">
+              Practise again
+            </Link>
+            <Link to="/my-interviews" className="btn-text">
+              View all interviews &rarr;
+            </Link>
+          </>
+        )}
       </div>
     </div>
   );
