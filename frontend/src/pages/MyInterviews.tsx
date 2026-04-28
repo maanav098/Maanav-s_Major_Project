@@ -6,17 +6,21 @@ import type { Interview } from '../types';
 export default function MyInterviews() {
   const [interviews, setInterviews] = useState<Interview[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     loadInterviews();
   }, []);
 
   const loadInterviews = async () => {
+    setLoading(true);
+    setLoadError(false);
     try {
       const data = await interviewApi.myInterviews();
       setInterviews(data);
     } catch (error) {
       console.error('Failed to load interviews', error);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -61,7 +65,19 @@ export default function MyInterviews() {
       </div>
 
       <div className="mt-12" style={{ borderTop: '1px solid var(--rule)' }}>
-        {interviews.length === 0 ? (
+        {loadError ? (
+          <div className="py-20 text-center">
+            <p className="serif-italic text-ink" style={{ fontSize: '20px' }}>
+              Couldn't load your history.
+            </p>
+            <p className="mt-2 text-ink-muted" style={{ fontSize: '14px' }}>
+              Something went wrong on our end. Please try again.
+            </p>
+            <button onClick={loadInterviews} className="btn-secondary mt-6">
+              Retry
+            </button>
+          </div>
+        ) : interviews.length === 0 ? (
           <div className="py-20 text-center">
             <p className="serif-italic text-ink" style={{ fontSize: '20px' }}>
               No interviews yet.

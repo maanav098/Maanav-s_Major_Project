@@ -109,24 +109,31 @@ function ActionRow({
 function CandidateDashboard() {
   const { user } = useAuth();
   const [interviews, setInterviews] = useState<Interview[] | null>(null);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     interviewApi
       .myInterviews()
-      .then(setInterviews)
-      .catch(() => setInterviews([]));
+      .then((data) => {
+        setInterviews(data);
+        setLoadError(false);
+      })
+      .catch(() => setLoadError(true));
   }, []);
 
-  const total = interviews?.length ?? null;
+  const total = loadError ? null : interviews?.length ?? null;
   const scored = (interviews ?? []).filter(
     (i) => typeof i.overall_score === 'number',
   );
-  const avg =
-    scored.length > 0
+  const avg = loadError
+    ? '—'
+    : scored.length > 0
       ? (scored.reduce((s, i) => s + (i.overall_score as number), 0) / scored.length).toFixed(1)
-      : '—';
+      : interviews
+        ? '—'
+        : '—';
   const uniqueRoles = new Set((interviews ?? []).map((i) => i.role).filter(Boolean));
-  const rolesPractised = interviews ? uniqueRoles.size : null;
+  const rolesPractised = loadError ? null : interviews ? uniqueRoles.size : null;
 
   const fmt = (n: number | null) => (n == null ? '—' : n.toString());
 
@@ -148,6 +155,20 @@ function CandidateDashboard() {
           { label: 'Roles practised', value: fmt(rolesPractised), sub: 'Distinct roles attempted' },
         ]}
       />
+
+      {loadError && (
+        <p
+          className="-mt-6 mb-6"
+          style={{
+            color: 'var(--accent)',
+            fontSize: '13px',
+            borderLeft: '2px solid var(--accent)',
+            paddingLeft: '0.75rem',
+          }}
+        >
+          Could not load your interview history. Try refreshing the page.
+        </p>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mt-6">
         <section>
