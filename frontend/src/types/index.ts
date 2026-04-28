@@ -98,6 +98,8 @@ export interface QuestionAsked {
   question: string;
   type: string;
   time_limit_minutes?: number;
+  source_url?: string;
+  source_domain?: string;
 }
 
 export interface Response {

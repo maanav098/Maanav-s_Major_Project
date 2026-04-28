@@ -329,6 +329,31 @@ export default function Interview() {
             <h2 className="serif" style={{ fontSize: '21px', lineHeight: 1.35, color: 'var(--ink)' }}>
               {currentQuestion?.question}
             </h2>
+            {currentQuestion?.source_domain && (
+              <p
+                className="eyebrow mt-4 flex items-center gap-2"
+                style={{ fontSize: '10px' }}
+              >
+                <span>As reported on</span>
+                {currentQuestion.source_url ? (
+                  <a
+                    href={currentQuestion.source_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-accent"
+                    style={{
+                      textDecoration: 'none',
+                      borderBottom: '1px solid var(--accent)',
+                      paddingBottom: '1px',
+                    }}
+                  >
+                    {currentQuestion.source_domain}
+                  </a>
+                ) : (
+                  <span className="text-accent">{currentQuestion.source_domain}</span>
+                )}
+              </p>
+            )}
           </div>
 
           {currentQuestion?.type === 'coding' ? (

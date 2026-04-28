@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
-from typing import List
+from typing import List, Optional
 from datetime import datetime
 
 from app.core.database import get_db
@@ -52,6 +52,7 @@ async def start_interview(
     num_questions = interview_data.num_questions
     categories: list[str] = []
     prepend_questions: list[Question] = []
+    jd: Optional[str] = None
 
     job = None
     if interview_data.job_id:
@@ -61,6 +62,7 @@ async def start_interview(
             company = job.company
             num_questions = job.num_questions or num_questions
             categories = list(job.question_categories or [])
+            jd = job.description or None
 
             for cq in (job.custom_questions or []):
                 text = (cq.get("question_text") or "").strip()
@@ -90,7 +92,34 @@ async def start_interview(
         num_questions=num_questions,
         categories=categories or None,
         prepend=prepend_questions or None,
+        jd=jd,
     )
+
+    def _domain(url: Optional[str]) -> Optional[str]:
+        if not url:
+            return None
+        from urllib.parse import urlparse
+        try:
+            host = urlparse(url).hostname or ""
+            return host.removeprefix("www.") or None
+        except Exception:  # noqa: BLE001
+            return None
+
+    questions_asked_snapshot = []
+    for q in questions:
+        entry: dict = {
+            "id": q.id,
+            "question": q.question_text,
+            "type": q.question_type.value,
+        }
+        if q.time_limit_minutes:
+            entry["time_limit_minutes"] = q.time_limit_minutes
+        if q.source_url:
+            entry["source_url"] = q.source_url
+            dom = _domain(q.source_url)
+            if dom:
+                entry["source_domain"] = dom
+        questions_asked_snapshot.append(entry)
 
     interview = Interview(
         candidate_id=candidate.id,
@@ -98,7 +127,7 @@ async def start_interview(
         role=role,
         company=company,
         status=InterviewStatus.IN_PROGRESS,
-        questions_asked=[{"id": q.id, "question": q.question_text, "type": q.question_type.value} for q in questions],
+        questions_asked=questions_asked_snapshot,
         responses=[],
         started_at=datetime.utcnow()
     )

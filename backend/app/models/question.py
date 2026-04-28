@@ -31,5 +31,6 @@ class Question(Base):
     question_text = Column(Text, nullable=False)
     expected_answer = Column(Text)
     key_points = Column(Text)
+    source_url = Column(String, nullable=True)
     time_limit_minutes = Column(Integer, default=5)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
