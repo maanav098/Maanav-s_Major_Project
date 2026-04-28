@@ -85,15 +85,17 @@ export default function CodeEditor({
   const [stdin, setStdin] = useState('');
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<RunResult | null>(null);
+  const [savedByLang, setSavedByLang] = useState<Record<string, string>>({});
 
   const language = LANGUAGES.find((l) => l.id === languageId) || LANGUAGES[0];
 
   const handleLanguageChange = (newId: string) => {
     const newLang = LANGUAGES.find((l) => l.id === newId);
-    if (!newLang) return;
-    if (!code.trim()) {
-      onCodeChange(newLang.starter);
-    }
+    if (!newLang || newId === languageId) return;
+
+    setSavedByLang((prev) => ({ ...prev, [languageId]: code }));
+    const next = savedByLang[newId];
+    onCodeChange(next !== undefined ? next : newLang.starter);
     onLanguageChange(newId);
     setResult(null);
   };

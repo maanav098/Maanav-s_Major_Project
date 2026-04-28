@@ -360,6 +360,7 @@ export default function Interview() {
             <>
               <div className="mb-6">
                 <CodeEditor
+                  key={`q-${currentQuestion?.id ?? currentQuestionIndex}`}
                   languageId={codeLanguage}
                   onLanguageChange={setCodeLanguage}
                   code={code}
